@@ -20,6 +20,8 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      # 仅在数据卷首次初始化时执行；用于自动创建 pgvector 扩展
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d interview_guide"]
       interval: 5s
@@ -39,40 +41,32 @@ services:
       timeout: 3s
       retries: 10
 
-  # S3 兼容对象存储：M3（简历上传）才会真正用到
-  # 参考项目开发环境用 RustFS，此处用 MinIO —— 同为 S3 协议，Windows 下更省事（无需 RPC secret）
-  minio:
-    image: minio/minio:latest
-    container_name: interviewmind-minio
-    command: server /data --console-address ":9001"
+  # S3 兼容对象存储：M3（简历上传）才会真正用到。
+  # 用参考项目同款的 RustFS。
+  # 说明：2025-10 MinIO 删除了全部 Docker Hub 镜像并停掉开源社区版，
+  # 所以这里不采用 MinIO（参见 https://www.appinn.com/minio-remove-docker-images/）。
+  rustfs:
+    image: rustfs/rustfs:1.0.0-rc.6
+    container_name: interviewmind-rustfs
+    command: ["/data"]
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      RUSTFS_ACCESS_KEY: rustfsadmin
+      RUSTFS_SECRET_KEY: rustfsadmin
+      # 参考项目要求从 .env 注入；这里给默认值，避免没有 .env 时 compose 直接报错
+      RUSTFS_RPC_SECRET: ${RUSTFS_RPC_SECRET:-rustfsadmin}
+      RUSTFS_CONSOLE_ENABLE: "true"
     ports:
       - "9000:9000"
       - "9001:9001"
     volumes:
-      - minio_data:/data
+      - rustfs_data:/data
     healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
+      test: ["CMD", "/usr/bin/curl", "--fail", "--silent", "http://localhost:9000/health/ready"]
       interval: 5s
-      timeout: 5s
-      retries: 10
-
-  createbuckets:
-    image: minio/mc:latest
-    container_name: interviewmind-createbuckets
-    depends_on:
-      minio:
-        condition: service_healthy
-    entrypoint: >
-      /bin/sh -c "
-      mc alias set local http://minio:9000 minioadmin minioadmin &&
-      mc mb --ignore-existing local/interview-guide &&
-      echo 'bucket interview-guide ready'
-      "
+      timeout: 3s
+      retries: 20
 
 volumes:
   postgres_data:
   redis_data:
-  minio_data:
+  rustfs_data:
