@@ -143,6 +143,16 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<!-- Windows 下控制台默认 GBK，而 JDK 18+ 默认 UTF-8，两者不一致会导致
+					     日志中文乱码。这里强制派生 JVM 以 UTF-8 输出。
+					     注意：控制台侧还需要 chcp 65001，见 scripts/run-dev.ps1。 -->
+					<jvmArguments>
+						-Dfile.encoding=UTF-8
+						-Dstdout.encoding=UTF-8
+						-Dstderr.encoding=UTF-8
+					</jvmArguments>
+				</configuration>
 			</plugin>
 			<!-- MapStruct 与 Lombok 必须共用同一批注解处理器，否则 Mapper 生成实现时
 			     看不到 Lombok 生成的 getter/setter。这是 Maven 下的固定写法。 -->
