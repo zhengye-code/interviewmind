@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AiController {
     private final AiChatService aiChatService;
     @GetMapping("ping")
-    public Result<String> ping(@RequestParam String message){
+    public Result<String> ping(@RequestParam("message") String message){
         return Result.success(aiChatService.chat(message));
     }
 }

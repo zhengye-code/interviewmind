@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -53,7 +54,13 @@ public class GlobalExceptionHandler {
         log.warn("请求方法不支持: {}", e.getMethod());
         return Result.error(ErrorCode.METHOD_NOT_ALLOWED, "请求方法不支持: " + e.getMethod());
     }
-
+    /** 缺少必填请求参数 */
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    @ResponseStatus(HttpStatus.OK)
+    public Result<Void> handleMissingParameter(MissingServletRequestParameterException e) {
+        log.warn("缺少请求参数: {}", e.getParameterName());
+        return Result.error(ErrorCode.BAD_REQUEST, "缺少必填参数: " + e.getParameterName());
+    }
     /** 兜底：所有未匹配的异常，最后一道防线 */
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.OK)
@@ -61,4 +68,5 @@ public class GlobalExceptionHandler {
         log.error("系统异常", e);
         return Result.error(ErrorCode.INTERNAL_ERROR, "系统繁忙，请稍后重试");
     }
+
 }
