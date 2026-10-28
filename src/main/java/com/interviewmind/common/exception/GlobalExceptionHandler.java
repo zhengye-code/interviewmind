@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -60,6 +61,14 @@ public class GlobalExceptionHandler {
     public Result<Void> handleMissingParameter(MissingServletRequestParameterException e) {
         log.warn("缺少请求参数: {}", e.getParameterName());
         return Result.error(ErrorCode.BAD_REQUEST, "缺少必填参数: " + e.getParameterName());
+    }
+    /** 请求的 Content-Type 不被接口接受（例如 multipart 接口传了 application/json 或干脆没带类型） */
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    @ResponseStatus(HttpStatus.OK)
+    public Result<Void> handleMediaTypeNotSupported(HttpMediaTypeNotSupportedException e) {
+        log.warn("不支持的请求格式: {}", e.getContentType());
+        return Result.error(ErrorCode.UNSUPPORTED_MEDIA_TYPE,
+                "请求格式不支持，请使用 multipart/form-data 上传文件");
     }
     /** 兜底：所有未匹配的异常，最后一道防线 */
     @ExceptionHandler(Exception.class)
