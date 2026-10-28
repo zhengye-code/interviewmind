@@ -24,7 +24,8 @@ public enum ErrorCode {
     RESUME_FILE_EMPTY(2002, "上传文件为空"),
     RESUME_FILE_TYPE_NOT_SUPPORTED(2003, "不支持的文件类型"),
     RESUME_FILE_TOO_LARGE(2004, "文件大小超过限制"),
-    RESUME_UPLOAD_FAILED(2005, "简历上传失败");
+    RESUME_UPLOAD_FAILED(2005, "简历上传失败"),
+    RESUME_PARSE_FAILED(2006, "简历解析失败");
     // 面试模块
     private final Integer code;
     private final String message;

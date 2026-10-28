@@ -22,9 +22,21 @@
 		<lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>
 		<springdoc.version>3.0.2</springdoc.version>
 		<!-- Tika / Redisson / S3 SDK / iText 在 M3+ 按需引入，避免 pom 提前膨胀 -->
+		<tika.version>2.9.2</tika.version>
 	</properties>
 
 	<dependencies>
+		<!-- Apache Tika — 文档解析（PDF / DOCX / DOC / TXT） -->
+		<dependency>
+			<groupId>org.apache.tika</groupId>
+			<artifactId>tika-core</artifactId>
+			<version>${tika.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.tika</groupId>
+			<artifactId>tika-parsers-standard-package</artifactId>
+			<version>${tika.version}</version>
+		</dependency>
 		<!-- ===== Spring Boot Starters（Boot 4 模块化命名） ===== -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

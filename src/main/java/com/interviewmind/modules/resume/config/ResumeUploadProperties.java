@@ -14,4 +14,11 @@ import java.util.List;
 public class ResumeUploadProperties {
     private Long maxSize=10*1024*1024L;
     private List<String > allowedExtensions=List.of("pdf", "doc", "docx", "txt");
+    /** 允许的真实 MIME 类型 */
+    private List<String> allowedContentTypes = List.of(
+            "application/pdf",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/octet-stream",
+            "text/plain");
 }
