@@ -25,7 +25,7 @@ import java.util.UUID;
 public class ResumeAnalyzeConsumer implements SmartLifecycle {
 
     private final ResumeAnalyzeService resumeAnalyzeService;
-
+    private final ResumeAnalyzeProducer resumeAnalyzeProducer;
     /**
      * 显式声明三个泛型参数。
      * StringRedisTemplate.opsForStream() 是 <HK, HV> 泛型方法，
@@ -42,9 +42,10 @@ public class ResumeAnalyzeConsumer implements SmartLifecycle {
     private Thread workerThread;
 
     public ResumeAnalyzeConsumer(StringRedisTemplate redisTemplate,
-                                 ResumeAnalyzeService resumeAnalyzeService) {
+                                 ResumeAnalyzeService resumeAnalyzeService, ResumeAnalyzeProducer resumeAnalyzeProducer) {
         this.resumeAnalyzeService = resumeAnalyzeService;
         this.streamOps = redisTemplate.opsForStream();
+        this.resumeAnalyzeProducer = resumeAnalyzeProducer;
     }
 
     @Override
@@ -122,15 +123,25 @@ public class ResumeAnalyzeConsumer implements SmartLifecycle {
 
     private void handle(MapRecord<String, String, String> record) {
         String rawResumeId = record.getValue().get(AsyncTaskStreamConstants.FIELD_RESUME_ID);
+        String rawRetry=record.getValue().get(AsyncTaskStreamConstants.FIELD_RETRY_COUNT);
+        int retryCount=parseRetryCount(rawRetry);
         try {
             Long resumeId = Long.valueOf(rawResumeId);
-            log.info("开始处理简历分析任务: resumeId={}, recordId={}", resumeId, record.getId());
-            resumeAnalyzeService.analyze(resumeId);
+            log.info("开始处理简历分析任务: resumeId={},retryCount={}, recordId={}", resumeId,retryCount, record.getId());
+            resumeAnalyzeService.analyzeIfNeeded(resumeId);
             log.info("简历分析任务处理完成: resumeId={}", resumeId);
         } catch (Exception e) {
             // 失败时异常对象必须作为最后一个参数传入，否则日志里没有堆栈
-            log.error("简历分析任务处理失败: resumeId={}, recordId={}",
-                    rawResumeId, record.getId(), e);
+            if(retryCount<AsyncTaskStreamConstants.MAX_RETRY_COUNT) {
+                int next=retryCount+1;
+                Long resumeId = Long.valueOf(rawResumeId);
+                resumeAnalyzeService.markPendingForRetry(resumeId);
+                resumeAnalyzeProducer.enqueue(resumeId, next);
+                log.warn("任务已重新入队,resumeId={},下次 retryCount={}",resumeId,next);
+            }else{
+                log.error("任务已超过最大重试次数，标记为FAILED resumeId={}",rawResumeId);
+            }
+
         } finally {
             acknowledge(record);
         }
@@ -152,6 +163,17 @@ public class ResumeAnalyzeConsumer implements SmartLifecycle {
             Thread.sleep(AsyncTaskStreamConstants.ERROR_SLEEP_MS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+        }
+    }
+
+    private int parseRetryCount(String rawRetryCount){
+        if(rawRetryCount==null || rawRetryCount.isEmpty()){
+            return 0;
+        }
+        try {
+            return Integer.valueOf(rawRetryCount);
+        }catch (Exception e){
+            return 0;
         }
     }
 }

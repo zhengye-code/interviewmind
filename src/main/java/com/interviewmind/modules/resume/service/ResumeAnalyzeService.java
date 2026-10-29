@@ -13,6 +13,7 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -24,9 +25,32 @@ public class ResumeAnalyzeService {
     private final ResumeAnalysisRepository resumeAnalysisRepo;
     private final ResumeGradingService resumeGradingService;
     private final ObjectMapper objectMapper;
+
     public ResumeAnalysisResponse analyze(Long resumeId){
-        ResumeEntity resumeEntity = resumeRepo.findById(resumeId)
-                .orElseThrow(()-> new BusinessException(ErrorCode.RESUME_NOT_FOUND,"简历不存在,id="+resumeId));
+        return doAnalyze(loadResume(resumeId));
+    }
+
+    public void analyzeIfNeeded(Long resumeId){
+        ResumeEntity resume=loadResume(resumeId);
+        if(resume.getAnalyzeStatus()==AsyncTaskStatus.COMPLETED){
+            log.info("Resume analysis has been completed resume id:{}",resumeId);
+            return;
+        }
+        doAnalyze(resume);
+    }
+
+    public void markPendingForRetry(Long resumeId){
+        ResumeEntity resume=loadResume(resumeId);
+        if(resume.getAnalyzeStatus()==AsyncTaskStatus.COMPLETED){
+            return;
+        }
+        resume.setAnalyzeStatus(AsyncTaskStatus.PENDING);
+        resume.setAnalyzeUpdatedAt(LocalDateTime.now());
+        resumeRepo.save(resume);
+    }
+
+    private ResumeAnalysisResponse doAnalyze(ResumeEntity resumeEntity){
+        Long resumeId=resumeEntity.getId();
         if(resumeEntity.getResumeText()==null||resumeEntity.getResumeText().trim().length()==0){
             throw new BusinessException(ErrorCode.RESUME_PARSE_FAILED,"简历正文为空");
         }
@@ -49,8 +73,7 @@ public class ResumeAnalyzeService {
             entity.setStrengthsJson(toJson(result.strengths()));
             entity.setSuggestionsJson(toJson(result.suggestions()));
             ResumeAnalysisEntity saved=resumeAnalysisRepo.save(entity);
-            resumeEntity.setAnalyzeStatus(AsyncTaskStatus.COMPLETED);
-            resumeEntity.setAnalyzeError(null);
+            setUpdateStatus(resumeEntity,AsyncTaskStatus.COMPLETED,null);
             resumeRepo.save(resumeEntity);
             log.info("简历分析已入库：resumeId={},analysisId={},总分={}",saved.getId(),saved.getOverallScore());
             return toResponse(saved);
@@ -72,6 +95,11 @@ public class ResumeAnalyzeService {
         return toResponse(entity);
     }
 
+    private ResumeEntity loadResume(Long resumeId){
+        ResumeEntity resumeEntity = resumeRepo.findById(resumeId)
+                .orElseThrow(()-> new BusinessException(ErrorCode.RESUME_NOT_FOUND,"简历不存在,id="+resumeId));
+        return resumeEntity;
+    }
     private String toJson(List<String> json){
         try {
             return objectMapper.writeValueAsString(json == null ? List.of() : json);
@@ -138,5 +166,12 @@ public class ResumeAnalyzeService {
     /** DTO 里分数是 int，库里可能为 null，拆箱前必须兜底 */
     private static int nullToZero(Integer value) {
         return value == null ? 0 : value;
+    }
+
+    private void setUpdateStatus(ResumeEntity resumeEntity,AsyncTaskStatus status,String error){
+        resumeEntity.setAnalyzeStatus(status);
+        resumeEntity.setAnalyzeError(error);
+        resumeEntity.setAnalyzeUpdatedAt(LocalDateTime.now());
+        resumeRepo.save(resumeEntity);
     }
 }

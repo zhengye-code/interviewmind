@@ -41,13 +41,24 @@ public class ResumeEntity {
     @Column(name = "analyze_error", length = 500)
     private String analyzeError;
 
+    /** 最后一次状态变化时间，用于判定任务是否卡住 */
+    @Column(name = "analyze_updated_at")
+    private LocalDateTime analyzeUpdatedAt;
+
+    /** 恢复调度器自动补投次数（手动重试不增加），与消息 retryCount 独立 */
+    @Column(name = "analyze_recovery_count", nullable = false)
+    private int analyzeRecoveryCount = 0;
+
     @Column(name = "uploaded_at", nullable = false)
     private LocalDateTime uploadedAt;
 
     @PrePersist
     protected void onCreate() {
-        if(uploadedAt == null) {
+        if (uploadedAt == null) {
             uploadedAt = LocalDateTime.now();
+        }
+        if (analyzeUpdatedAt == null) {
+            analyzeUpdatedAt = LocalDateTime.now();
         }
     }
 }

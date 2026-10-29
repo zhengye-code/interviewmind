@@ -18,4 +18,8 @@ public class AsyncTaskStreamConstants {
     public static final long BLOCK_SECONDS = 5L;
     /** 出错后的重试间隔（毫秒） */
     public static final long ERROR_SLEEP_MS = 1000L;
+    /** 单条消息最大执行重试次数 */
+    public static final int MAX_RETRY_COUNT = 3;
+    /** 恢复调度器最大补投次数 */
+    public static final int MAX_RECOVERY_COUNT = 3;
 }
