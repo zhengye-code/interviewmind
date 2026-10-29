@@ -7,6 +7,7 @@ import com.interviewmind.infrastructure.file.DocumentParseService;
 import com.interviewmind.infrastructure.file.FileHashService;
 import com.interviewmind.infrastructure.file.FileValidationService;
 import com.interviewmind.modules.resume.config.ResumeUploadProperties;
+import com.interviewmind.modules.resume.listener.ResumeAnalyzeProducer;
 import com.interviewmind.modules.resume.model.ResumeEntity;
 import com.interviewmind.modules.resume.model.ResumeUploadResponse;
 import com.interviewmind.modules.resume.repository.ResumeRepository;
@@ -28,6 +29,7 @@ public class ResumeUploadService {
     private final FileHashService fileHashService;
     private final DocumentParseService documentParseService;
     private final ResumeUploadProperties properties;
+    private final ResumeAnalyzeProducer resumeAnalyzeProducer;
 
     public ResumeUploadResponse upload(MultipartFile file) {
         // 1. 扩展名 + 大小 + 非空（快速失败，给用户友好的提示）
@@ -75,6 +77,12 @@ public class ResumeUploadService {
             ResumeEntity savedEntity = resumeRepository.save(entity);
             log.info("简历已保存：id={}, filename={}, size={}B",
                     savedEntity.getId(), savedEntity.getOriginalFilename(), savedEntity.getFileSize());
+            boolean enqueued=resumeAnalyzeProducer.enqueue(savedEntity.getId());
+            if (!enqueued) {
+                savedEntity.setAnalyzeStatus(AsyncTaskStatus.FAILED);
+                savedEntity.setAnalyzeError("分析任务投递失败，请稍后重试");
+                resumeRepository.save(savedEntity);
+            }
             return toResponse(savedEntity, false);
         } catch (DataIntegrityViolationException e) {
             log.warn("唯一约束冲突，按重复处理，hash={}", fileHash);

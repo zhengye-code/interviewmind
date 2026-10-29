@@ -2,6 +2,7 @@ package com.interviewmind.modules.resume;
 
 import com.interviewmind.common.result.Result;
 import com.interviewmind.modules.resume.model.ResumeAnalysisResponse;
+import com.interviewmind.modules.resume.model.ResumeStatusResponse;
 import com.interviewmind.modules.resume.model.ResumeUploadResponse;
 import com.interviewmind.modules.resume.service.ResumeAnalyzeService;
 import com.interviewmind.modules.resume.service.ResumeUploadService;
@@ -29,5 +30,10 @@ public class ResumeController {
     @GetMapping("/{id}/analysis")
     public Result<ResumeAnalysisResponse> latestAnalysis(@PathVariable("id") Long id){
         return Result.success(resumeAnalyzeService.getLatest(id));
+    }
+
+    @GetMapping("/{id}/status")
+    public Result<ResumeStatusResponse> status(@PathVariable("id") Long id){
+        return Result.success(resumeAnalyzeService.getStatus(id));
     }
 }

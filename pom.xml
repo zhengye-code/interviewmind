@@ -54,6 +54,11 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-flyway</artifactId>
 		</dependency>
+		<!-- Redis：用于 Redis Stream 异步任务队列（简历分析、后续向量化等） -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-redis</artifactId>
+		</dependency>
 
 		<!-- ===== 数据库 ===== -->
 		<dependency>

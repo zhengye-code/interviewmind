@@ -3,10 +3,7 @@ package com.interviewmind.modules.resume.service;
 import com.interviewmind.common.exception.BusinessException;
 import com.interviewmind.common.exception.ErrorCode;
 import com.interviewmind.common.model.AsyncTaskStatus;
-import com.interviewmind.modules.resume.model.ResumeAnalysisEntity;
-import com.interviewmind.modules.resume.model.ResumeAnalysisResponse;
-import com.interviewmind.modules.resume.model.ResumeAnalysisResult;
-import com.interviewmind.modules.resume.model.ResumeEntity;
+import com.interviewmind.modules.resume.model.*;
 import com.interviewmind.modules.resume.repository.ResumeAnalysisRepository;
 import com.interviewmind.modules.resume.repository.ResumeRepository;
 import lombok.RequiredArgsConstructor;
@@ -119,6 +116,22 @@ public class ResumeAnalyzeService {
                 fromJson(resumeAnalysisEntity.getStrengthsJson()),
                 fromJson(resumeAnalysisEntity.getSuggestionsJson()),
                 resumeAnalysisEntity.getAnalyzedAt()
+        );
+    }
+
+    public ResumeStatusResponse getStatus(Long resumeId){
+        ResumeEntity resume=resumeRepo.findById(resumeId)
+                .orElseThrow(()->new BusinessException(ErrorCode.RESUME_NOT_FOUND,"简历不存在，id="+resumeId));
+        // 分析尚未完成时没有记录，这是正常状态，不能当成错误；
+        // 轮询接口必须始终返回 200 + 当前状态，否则前端无法区分"还没好"和"出错了"
+        Integer overallScore=resumeAnalysisRepo.findTopByResumeIdOrderByAnalyzedAtDesc(resumeId)
+                .map(ResumeAnalysisEntity::getOverallScore)
+                .orElse(null);
+        return new ResumeStatusResponse(
+                resumeId,
+                resume.getAnalyzeStatus() == null ? null : resume.getAnalyzeStatus().name(),
+                resume.getAnalyzeError(),
+                overallScore
         );
     }
 
