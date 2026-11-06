@@ -1,0 +1,24 @@
+displayName: 前端开发
+display:
+  icon: "🎨"
+  gradient: "from-pink-500 to-rose-500"
+categories:
+  - key: JAVASCRIPT
+    label: JavaScript / TypeScript
+    priority: CORE
+    ref: javascript.md
+  - key: REACT
+    label: React
+    priority: CORE
+    ref: react.md
+  - key: BROWSER
+    label: 浏览器与渲染
+    priority: NORMAL
+    ref: browser.md
+  - key: ENGINEERING
+    label: 前端工程化
+    priority: NORMAL
+    ref: engineering.md
+  - key: PROJECT
+    label: 项目经历
+    priority: ALWAYS_ONE

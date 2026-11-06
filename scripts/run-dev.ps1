@@ -21,6 +21,17 @@ $OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 
 Set-Location (Split-Path $PSScriptRoot -Parent)
 
+# ---- 本机 PostgreSQL 端口修正 ----
+# Windows(Hyper-V) 开机时会把一段随机端口划进「动态保留段」，Docker 绑不上宿主机 5432。
+#   查看被保留的区间: netsh interface ipv4 show excludedportrange protocol=tcp
+#   症状: ports are not available: bind: An attempt was made to access a socket in a way forbidden by its access permissions
+# compose.yaml 和 application.properties 都读 POSTGRES_PORT，两边自动一致。
+# 换机器时如果 5432 没被占用，把这里改成 5432 或删掉这段即可。
+if ([string]::IsNullOrWhiteSpace($env:POSTGRES_PORT)) {
+    $env:POSTGRES_PORT = '15432'
+}
+Write-Host "PostgreSQL 宿主机端口: $env:POSTGRES_PORT" -ForegroundColor Cyan
+
 # ---- 确保 DEEPSEEK_API_KEY 在当前进程可见 ----
 if ([string]::IsNullOrWhiteSpace($env:DEEPSEEK_API_KEY)) {
     $fromSystem = [Environment]::GetEnvironmentVariable('DEEPSEEK_API_KEY', 'Machine')

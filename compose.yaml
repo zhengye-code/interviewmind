@@ -17,7 +17,12 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
     ports:
-      - "5432:5432"
+      # 宿主机端口可用 POSTGRES_PORT 覆盖：
+      #   有些机器上 Windows(Hyper-V) 会把 5432 划进「动态保留端口段」，Docker 绑不上，
+      #   报 "bind: An attempt was made to access a socket in a way forbidden by its access permissions"。
+      #   用 netsh interface ipv4 show excludedportrange protocol=tcp 可以看到被保留的区间。
+      #   此时设 POSTGRES_PORT=15432 即可（容器内仍是 5432，应用侧也用同一个变量）。
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       # 仅在数据卷首次初始化时执行；用于自动创建 pgvector 扩展
