@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>AI 模拟面试（极简版）</title>
+    <style>
+        /* 只做可读性，不做设计 */
+        body { font-family: system-ui, sans-serif; max-width: 860px; margin: 24px auto; padding: 0 16px; line-height: 1.6; }
+        fieldset { margin-bottom: 20px; border: 1px solid #ccc; padding: 12px 16px; }
+        legend { font-weight: bold; padding: 0 6px; }
+        label { display: inline-block; margin-right: 12px; }
+        textarea { width: 100%; box-sizing: border-box; min-height: 120px; font: inherit; }
+        button { padding: 6px 14px; font-size: 15px; cursor: pointer; }
+        button:disabled { cursor: not-allowed; opacity: .5; }
+        .muted { color: #666; font-size: 14px; }
+        .question { font-size: 17px; white-space: pre-wrap; margin: 8px 0 12px; }
+        .tag { display: inline-block; background: #eef; padding: 1px 8px; border-radius: 4px; font-size: 13px; margin-right: 8px; }
+        #message { min-height: 24px; }
+        .error { color: #b00020; }
+        .ok { color: #0a6b2d; }
+        table { border-collapse: collapse; width: 100%; font-size: 14px; }
+        th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; vertical-align: top; }
+        th { background: #f5f5f5; }
+        #resultTable td:first-child { width: 60px; }
+    </style>
+</head>
+<body>
+
+<h1>AI 模拟面试（极简版）</h1>
+<p class="muted">
+    这个页面直接放在后端的 <code>static/</code> 目录里，和接口同源，所以不需要配置跨域。
+</p>
+
+<!-- ========== 第 1 步：创建面试 ========== -->
+<fieldset id="stepCreate">
+    <legend>1. 创建面试</legend>
+    <label>方向 <select id="skillSelect"></select></label>
+    <label>题数 <input id="totalQuestions" type="number" value="10" min="1" max="20" style="width:70px"></label>
+    <label>难度
+        <select id="difficulty">
+            <option value="EASY">EASY</option>
+            <option value="MEDIUM" selected>MEDIUM</option>
+            <option value="HARD">HARD</option>
+        </select>
+    </label>
+    <button id="btnCreate">创建</button>
+</fieldset>
+
+<!-- ========== 第 2 步：出题 ========== -->
+<fieldset id="stepGenerate" hidden>
+    <legend>2. 生成题目</legend>
+    <div id="sessionInfo" class="muted"></div>
+    <div id="planInfo" class="muted" style="margin:6px 0 12px"></div>
+    <button id="btnGenerate">开始出题（约 20-40 秒）</button>
+</fieldset>
+
+<!-- ========== 第 3 步：答题 ========== -->
+<fieldset id="stepAnswer" hidden>
+    <legend>3. 答题</legend>
+    <div class="muted" id="progress"></div>
+    <div style="margin:8px 0">
+        <span class="tag" id="qCategory"></span>
+        <span class="tag" id="qDifficulty"></span>
+    </div>
+    <div class="question" id="qText"></div>
+    <textarea id="answerText" placeholder="在这里输入你的回答……"></textarea>
+    <div style="margin-top:10px">
+        <button id="btnSubmit">提交并进入下一题</button>
+    </div>
+</fieldset>
+
+<!-- ========== 第 4 步：结果 ========== -->
+<fieldset id="stepResult" hidden>
+    <legend>4. 面试结果</legend>
+    <div id="resultSummary" class="muted" style="margin-bottom:10px"></div>
+    <table id="resultTable">
+        <thead>
+        <tr><th>#</th><th>题目</th><th>你的回答</th><th>用时（秒）</th></tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+    <div style="margin-top:14px">
+        <button id="btnRestart">再面一场</button>
+    </div>
+</fieldset>
+
+<div id="message"></div>
+
+<script>
+    /* ------------------------------------------------------------------
+     * 全局状态：只存一个 sessionId，其它都从接口拿
+     * ---------------------------------------------------------------- */
+    let sessionId = null;
+    let currentQuestion = null;   // { questionId, questionIndex, questionText, ... }
+
+    const $ = (id) => document.getElementById(id);
+
+    function show(id, visible) {
+        $(id).hidden = !visible;
+    }
+
+    function setMessage(text, type) {
+        const el = $('message');
+        el.textContent = text || '';
+        el.className = type || '';
+    }
+
+    /**
+     * 统一的接口调用。
+     * 后端的约定是：HTTP 永远 200，真正的结果在 body 的 code 里。
+     * 所以这里把 code !== 200 转成异常，页面只管 try/catch。
+     */
+    async function api(path, options = {}) {
+        const response = await fetch(path, options);
+        const body = await response.json();
+        if (body.code !== 200) {
+            throw new Error('[' + body.code + '] ' + body.message);
+        }
+        return body.data;
+    }
+
+    function postJson(path, payload) {
+        return api(path, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+    }
+
+    /* ------------------------------------------------------------------
+     * 步骤 1：加载面试方向下拉框
+     * ---------------------------------------------------------------- */
+    async function loadSkills() {
+        try {
+            const skills = await api('/api/interview/skills');
+            const select = $('skillSelect');
+            select.innerHTML = '';
+            for (const skill of skills) {
+                const option = document.createElement('option');
+                option.value = skill.id;
+                option.textContent = (skill.displayName || skill.name) + '（' + skill.id + '）';
+                select.appendChild(option);
+            }
+        } catch (e) {
+            setMessage('加载面试方向失败：' + e.message, 'error');
+        }
+    }
+
+    /* ------------------------------------------------------------------
+     * 步骤 1：创建会话
+     * ---------------------------------------------------------------- */
+    async function createSession() {
+        const payload = {
+            skillId: $('skillSelect').value,
+            totalQuestions: Number($('totalQuestions').value),
+            difficulty: $('difficulty').value
+        };
+        try {
+            setMessage('正在创建面试……');
+            const session = await postJson('/api/interview/sessions', payload);
+            sessionId = session.sessionId;
+
+            $('sessionInfo').textContent =
+                '会话 #' + session.sessionId +
+                '　方向：' + session.skillName +
+                '　难度：' + session.difficulty +
+                '　题数：' + session.totalQuestions +
+                '　状态：' + session.status;
+
+            $('planInfo').textContent = '配额：' + session.plan
+                .filter(p => p.quota > 0)
+                .map(p => p.label + ' × ' + p.quota)
+                .join('，');
+
+            show('stepGenerate', true);
+            show('stepAnswer', false);
+            show('stepResult', false);
+            setMessage('面试已创建，点击“开始出题”。', 'ok');
+        } catch (e) {
+            setMessage('创建失败：' + e.message, 'error');
+        }
+    }
+
+    /* ------------------------------------------------------------------
+     * 步骤 2：出题并落库（同步等待 AI，可能要 20-40 秒）
+     * ---------------------------------------------------------------- */
+    async function generateQuestions() {
+        const button = $('btnGenerate');
+        button.disabled = true;
+        button.textContent = '出题中，请稍候……';
+        setMessage('AI 正在出题，请勿关闭页面。');
+        try {
+            const questions = await api('/api/interview/sessions/' + sessionId + '/generate', { method: 'POST' });
+            setMessage('已生成 ' + questions.length + ' 道题。', 'ok');
+            await loadCurrentQuestion();
+        } catch (e) {
+            setMessage('出题失败：' + e.message, 'error');
+        } finally {
+            button.disabled = false;
+            button.textContent = '重新出题（已出过题会直接返回）';
+        }
+    }
+
+    /* ------------------------------------------------------------------
+     * 步骤 3：拿"当前该答哪一题"
+     * ---------------------------------------------------------------- */
+    async function loadCurrentQuestion() {
+        try {
+            const data = await api('/api/interview/sessions/' + sessionId + '/current');
+            renderCurrent(data);
+        } catch (e) {
+            setMessage('获取当前题失败：' + e.message, 'error');
+        }
+    }
+
+    function renderCurrent(data) {
+        // 已经答完：直接展示结果
+        if (data.status === 'COMPLETED') {
+            show('stepAnswer', false);
+            show('stepGenerate', false);
+            showResult();
+            return;
+        }
+
+        currentQuestion = data.question;
+        show('stepAnswer', true);
+        show('stepResult', false);
+
+        $('progress').textContent =
+            '进度：第 ' + (data.currentIndex + 1) + ' / ' + data.totalQuestions + ' 题　（状态：' + data.status + '）';
+        $('qCategory').textContent = data.question.categoryLabel || data.question.categoryKey;
+        $('qDifficulty').textContent = data.question.difficulty;
+        $('qText').textContent = data.question.questionText;
+        $('answerText').value = '';
+        $('answerText').focus();
+    }
+
+    /* ------------------------------------------------------------------
+     * 步骤 3：提交回答
+     * ---------------------------------------------------------------- */
+    async function submitAnswer() {
+        if (!currentQuestion) {
+            return;
+        }
+        const text = $('answerText').value.trim();
+        if (!text) {
+            setMessage('回答不能为空。', 'error');
+            return;
+        }
+
+        const button = $('btnSubmit');
+        button.disabled = true;
+        try {
+            const url = '/api/interview/sessions/' + sessionId +
+                '/answers?questionIndex=' + currentQuestion.questionIndex;
+            const data = await postJson(url, { answerText: text });
+            setMessage('已提交。', 'ok');
+            renderCurrent(data);
+        } catch (e) {
+            setMessage('提交失败：' + e.message, 'error');
+        } finally {
+            button.disabled = false;
+        }
+    }
+
+    /* ------------------------------------------------------------------
+     * 步骤 4：结果
+     * ---------------------------------------------------------------- */
+    async function showResult() {
+        show('stepAnswer', false);
+        show('stepGenerate', false);
+        show('stepResult', true);
+        try {
+            const items = await api('/api/interview/sessions/' + sessionId + '/result');
+            const answered = items.filter(item => item.answerText);
+            $('resultSummary').textContent =
+                '共 ' + items.length + ' 道题，已答 ' + answered.length + ' 道。';
+
+            const tbody = $('resultTable').querySelector('tbody');
+            tbody.innerHTML = '';
+            for (const item of items) {
+                const tr = document.createElement('tr');
+                tr.innerHTML =
+                    '<td>' + (item.questionIndex + 1) + '</td>' +
+                    '<td></td>' +
+                    '<td></td>' +
+                    '<td>' + (item.timeUsed === null ? '-' : item.timeUsed) + '</td>';
+                // 用 textContent 赋值，避免题目里的 < > 被当成 HTML
+                tr.children[1].textContent = item.questionText;
+                tr.children[2].textContent = item.answerText || '（未作答）';
+                tbody.appendChild(tr);
+            }
+        } catch (e) {
+            setMessage('加载结果失败：' + e.message, 'error');
+        }
+    }
+
+    function restart() {
+        sessionId = null;
+        currentQuestion = null;
+        show('stepCreate', true);
+        show('stepGenerate', false);
+        show('stepAnswer', false);
+        show('stepResult', false);
+        setMessage('');
+    }
+
+    /* ------------------------------------------------------------------
+     * 事件绑定 + 初始化
+     * ---------------------------------------------------------------- */
+    $('btnCreate').addEventListener('click', createSession);
+    $('btnGenerate').addEventListener('click', generateQuestions);
+    $('btnSubmit').addEventListener('click', submitAnswer);
+    $('btnRestart').addEventListener('click', restart);
+
+    loadSkills();
+</script>
+</body>
+</html>

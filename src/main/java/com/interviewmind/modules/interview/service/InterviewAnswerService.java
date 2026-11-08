@@ -2,12 +2,7 @@ package com.interviewmind.modules.interview.service;
 
 import com.interviewmind.common.exception.BusinessException;
 import com.interviewmind.common.exception.ErrorCode;
-import com.interviewmind.modules.interview.model.AnswerRequest;
-import com.interviewmind.modules.interview.model.CurrentQuestionResponse;
-import com.interviewmind.modules.interview.model.InterviewQuestionEntity;
-import com.interviewmind.modules.interview.model.InterviewSessionEntity;
-import com.interviewmind.modules.interview.model.InterviewSessionStatus;
-import com.interviewmind.modules.interview.model.QuestionResponse;
+import com.interviewmind.modules.interview.model.*;
 import com.interviewmind.modules.interview.repository.InterviewQuestionRepository;
 import com.interviewmind.modules.interview.repository.InterviewSessionRepository;
 import com.interviewmind.modules.interview.utils.TransformService;
@@ -17,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -92,13 +88,27 @@ public class InterviewAnswerService {
 
     /** 列出本场全部题目（含已答过的） */
     @Transactional(readOnly = true)
-    public List<CurrentQuestionResponse> getAllQuestions(Long sessionId) {
+    public List<SummaryQuestionResponse> getAllQuestions(Long sessionId) {
         InterviewSessionEntity session = loadSession(sessionId);
-        List<CurrentQuestionResponse> responses = new ArrayList<>();
+        List<SummaryQuestionResponse> responses = new ArrayList<>();
         for (InterviewQuestionEntity question : loadQuestions(sessionId)) {
-            responses.add(toResponse(question, session));
+            responses.add(new SummaryQuestionResponse(
+                    sessionId,
+                    question.getQuestionIndex(),
+                    question.getQuestionText(),
+                    question.getAnswerText(),
+                    timeUsedSeconds(question)));
         }
         return responses;
+    }
+
+    /** 思考用时（秒）。没问过或没答过都返回 null，避免 NPE 和负数 */
+    private Long timeUsedSeconds(InterviewQuestionEntity question) {
+        if (question.getAskedAt() == null || question.getAnsweredAt() == null) {
+            return null;
+        }
+        long seconds = ChronoUnit.SECONDS.between(question.getAskedAt(), question.getAnsweredAt());
+        return Math.max(seconds, 0);
     }
 
     private InterviewSessionEntity loadSession(Long sessionId) {

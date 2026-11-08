@@ -3,6 +3,7 @@ package com.interviewmind.modules.interview.controller;
 import com.interviewmind.common.result.Result;
 import com.interviewmind.modules.interview.model.AnswerRequest;
 import com.interviewmind.modules.interview.model.CurrentQuestionResponse;
+import com.interviewmind.modules.interview.model.SummaryQuestionResponse;
 import com.interviewmind.modules.interview.service.InterviewAnswerService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -39,7 +40,7 @@ public class InterviewAnswerController {
 
     /** 本场全部题目（含已答过的） */
     @GetMapping("/result")
-    public Result<List<CurrentQuestionResponse>> getAllQuestions(@PathVariable("id") Long id) {
+    public Result<List<SummaryQuestionResponse>> getAllQuestions(@PathVariable("id") Long id) {
         return Result.success(interviewAnswerService.getAllQuestions(id));
     }
 }
