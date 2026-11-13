@@ -138,7 +138,7 @@ public class InterviewAnswerService {
     private CurrentQuestionResponse toResponse(InterviewQuestionEntity question,
                                                InterviewSessionEntity session) {
         Map<String, String> labels = TransformService.categoryLabels(
-                TransformService.fromJson(session.getPlanJson()));
+                TransformService.fromJsonToList(session.getPlanJson(), CategoryQuota.class));
         return new CurrentQuestionResponse(
                 session.getId(),
                 session.getStatus().name(),

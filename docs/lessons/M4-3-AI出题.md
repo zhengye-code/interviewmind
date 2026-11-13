@@ -196,7 +196,7 @@ classDiagram
 
 | 方法 | 访问 | 入参 | 返回 | 一句话 |
 |---|---|---|---|---|
-| `saveAll` | public | `List<InterviewQuestionEntity>` | `List<InterviewQuestionEntity>` | 一个事务里批量写入 |
+| `saveAllQuestions` | public | `List<InterviewQuestionEntity>` | `List<InterviewQuestionEntity>` | 一个事务里批量写入 |
 
 **`DevQuestionController`** —— 临时调试用，第 3 步删除
 
@@ -1163,7 +1163,7 @@ import java.util.List;
  *
  * 为什么单独放一个类？
  *   @Transactional 是靠"代理对象"生效的：外部调用 → 代理 → 开启事务 → 真正的方法。
- *   如果主厨类里自己调自己的方法（this.saveAll()），不经过代理，注解等于没写。
+ *   如果主厨类里自己调自己的方法（this.saveAllQuestions()），不经过代理，注解等于没写。
  *   而主厨需要在事务"外面"捕获冲突异常，所以事务必须停在这个类的边界上。
  */
 @Component

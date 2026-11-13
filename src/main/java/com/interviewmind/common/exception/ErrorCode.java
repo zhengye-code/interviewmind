@@ -15,6 +15,7 @@ public enum ErrorCode {
     METHOD_NOT_ALLOWED(405,"请求方法不支持"),
     UNSUPPORTED_MEDIA_TYPE(415,"不支持的请求格式"),
     INTERNAL_ERROR(500,"服务器内部错误"),
+    LOADING_ERROR(1000,"加载失败"),
     //AI错误模块
     AI_SERVICE_UNAVAILABLE(7001, "AI服务暂时不可用，请稍后重试"),
     AI_API_KEY_INVALID(7004, "AI服务密钥无效"),
@@ -33,6 +34,7 @@ public enum ErrorCode {
     INTERVIEW_QUESTION_NOT_FOUND(3003,"面试题目不存在"),
     INTERVIEW_SESSION_STATE_INVALID(3004, "面试会话当前状态不允许该操作"),
     INTERVIEW_QUESTION_GENERATION_FAILED(3005, "面试题目生成失败"),
+    INTERVIEW_GRADING_GENERATION_FAILED(3006,"AI打分失败"),
     INTERVIEW_QUESTION_SEQUENCE_NOT_MATCH(3007,"答题顺序不匹配");
     private final Integer code;
     private final String message;

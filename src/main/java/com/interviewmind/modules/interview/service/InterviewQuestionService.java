@@ -76,7 +76,7 @@ public class InterviewQuestionService {
 
     /** 调 AI 出题 → 清洗 → 校准题数 → 一个事务里写库 */
     private List<InterviewQuestionEntity> createQuestions(InterviewSessionEntity sessionEntity) {
-        List<CategoryQuota> plan = TransformService.fromJson(sessionEntity.getPlanJson());
+        List<CategoryQuota> plan = TransformService.fromJsonToList(sessionEntity.getPlanJson(), CategoryQuota.class);
 
         List<GeneratedQuestion> generated = sanitizeService.merge(
                 List.of(),
@@ -106,7 +106,7 @@ public class InterviewQuestionService {
             entities.add(entity);
         }
 
-        transactionalService.saveAll(entities);
+        transactionalService.saveAllQuestions(entities);
 
         // 校准：AI 实际给几道就以几道为准，避免"会话说 10 题、题库只有 8 行"
         if (sessionEntity.getTotalQuestions() != entities.size()) {
@@ -134,7 +134,7 @@ public class InterviewQuestionService {
     private List<QuestionResponse> toResponse(List<InterviewQuestionEntity> questionEntities,
                                               InterviewSessionEntity sessionEntity) {
         Map<String, String> labels = TransformService.categoryLabels(
-                TransformService.fromJson(sessionEntity.getPlanJson()));
+                TransformService.fromJsonToList(sessionEntity.getPlanJson(), CategoryQuota.class));
 
         List<QuestionResponse> questionResponses = new ArrayList<>(questionEntities.size());
         for (InterviewQuestionEntity question : questionEntities) {

@@ -5,7 +5,7 @@ import com.interviewmind.common.exception.ErrorCode;
 import com.interviewmind.modules.interview.model.CategoryQuota;
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.core.JacksonException;
-import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JavaType;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.HashMap;
@@ -34,13 +34,13 @@ public final class TransformService {
     }
 
     /** plan_json → List<CategoryQuota>；解析失败返回空列表（降级，不抛异常） */
-    public static List<CategoryQuota> fromJson(String json) {
+    public static <T> List<T> fromJsonToList(String json, Class<T> elementType) {
         if (json == null || json.isBlank()) {
             return List.of();
         }
+        JavaType javaType = OBJECT_MAPPER.getTypeFactory().constructCollectionType(List.class, elementType);
         try {
-            return OBJECT_MAPPER.readValue(json, new TypeReference<List<CategoryQuota>>() {
-            });
+            return OBJECT_MAPPER.readValue(json, javaType);
         } catch (JacksonException e) {
             log.warn("解析出题配额 JSON 失败,json={}", json);
             return List.of();
