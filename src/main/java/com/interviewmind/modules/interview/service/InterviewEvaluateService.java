@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -40,8 +41,7 @@ public class InterviewEvaluateService {
     private String model;
 
     public InterviewEvaluationResponse evaluate(Long sessionId){
-        InterviewSessionEntity  sessionEntity = sessionRepo.findById(sessionId)
-                .orElseThrow(()->new BusinessException(ErrorCode.INTERVIEW_SESSION_NOT_FOUND));
+        InterviewSessionEntity sessionEntity = loadSession(sessionId);
         InterviewReportEntity reportEntity = reportRepo.findBySessionId(sessionId)
                 .orElse(null);
         List<InterviewQuestionScoreEntity> scoreEntities=questionScoreRepo.findBySessionId(sessionId);
@@ -111,6 +111,32 @@ public class InterviewEvaluateService {
         transactionalService.saveAllScoredQuestionsAndReports(reportEntity,scoreEntities);
 
         return toEvaluationResponse(reportEntity,sessionEntity,scoreEntities,questionEntities);
+    }
+
+    /**
+     * 只读：查询已生成的评分报告。
+     *
+     * 和 evaluate 的区别：
+     *   evaluate 会调 AI、会写库 —— 用 POST；
+     *   本方法只读库 —— 用 GET，前端刷新页面 / 分享链接 / 浏览器预取都不会产生副作用。
+     *
+     * 还没评过时返回 3008，前端据此显示"去生成报告"的按钮。
+     */
+    @Transactional(readOnly = true)
+    public InterviewEvaluationResponse getReport(Long sessionId){
+        InterviewSessionEntity sessionEntity = loadSession(sessionId);
+        InterviewReportEntity reportEntity = reportRepo.findBySessionId(sessionId)
+                .orElseThrow(()->new BusinessException(ErrorCode.INTERVIEW_REPORT_NOT_FOUND,
+                        "面试会话 " + sessionId + " 还没有评分报告"));
+        List<InterviewQuestionScoreEntity> scoreEntities = questionScoreRepo.findBySessionId(sessionId);
+        List<InterviewQuestionEntity> questionEntities =
+                questionRepo.findBySessionIdOrderByQuestionIndexAsc(sessionId);
+        return toEvaluationResponse(reportEntity,sessionEntity,scoreEntities,questionEntities);
+    }
+
+    private InterviewSessionEntity loadSession(Long sessionId){
+        return sessionRepo.findById(sessionId)
+                .orElseThrow(()->new BusinessException(ErrorCode.INTERVIEW_SESSION_NOT_FOUND));
     }
 
     private List<QuestionScore> toScore(List<InterviewQuestionScoreEntity> scoreEntities,List<InterviewQuestionEntity> questionEntities){

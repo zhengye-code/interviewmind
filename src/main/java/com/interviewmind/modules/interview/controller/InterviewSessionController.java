@@ -31,4 +31,10 @@ public class InterviewSessionController {
     public Result<InterviewEvaluationResponse> evaluate(@PathVariable("id") Long id) {
         return Result.success(evaluationService.evaluate(id));
     }
+
+    /** 查询评分报告（只读）。刷新页面 / 分享链接都用这个，不要重复调 POST /evaluate */
+    @GetMapping("/{id}/report")
+    public Result<InterviewEvaluationResponse> report(@PathVariable("id") Long id) {
+        return Result.success(evaluationService.getReport(id));
+    }
 }

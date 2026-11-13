@@ -35,7 +35,8 @@ public enum ErrorCode {
     INTERVIEW_SESSION_STATE_INVALID(3004, "面试会话当前状态不允许该操作"),
     INTERVIEW_QUESTION_GENERATION_FAILED(3005, "面试题目生成失败"),
     INTERVIEW_GRADING_GENERATION_FAILED(3006,"AI打分失败"),
-    INTERVIEW_QUESTION_SEQUENCE_NOT_MATCH(3007,"答题顺序不匹配");
+    INTERVIEW_QUESTION_SEQUENCE_NOT_MATCH(3007,"答题顺序不匹配"),
+    INTERVIEW_REPORT_NOT_FOUND(3008,"该面试还没有评分报告");
     private final Integer code;
     private final String message;
 
