@@ -36,7 +36,9 @@ public enum ErrorCode {
     INTERVIEW_QUESTION_GENERATION_FAILED(3005, "面试题目生成失败"),
     INTERVIEW_GRADING_GENERATION_FAILED(3006,"AI打分失败"),
     INTERVIEW_QUESTION_SEQUENCE_NOT_MATCH(3007,"答题顺序不匹配"),
-    INTERVIEW_REPORT_NOT_FOUND(3008,"该面试还没有评分报告");
+    INTERVIEW_REPORT_NOT_FOUND(3008,"该面试还没有评分报告"),
+    //RAG模块
+    RAG_DOCUMENT_NOT_FOUND(4001,"未找到文档");
     private final Integer code;
     private final String message;
 

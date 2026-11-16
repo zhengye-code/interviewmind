@@ -2,12 +2,12 @@ package com.interviewmind.modules.interview.service;
 
 import com.interviewmind.common.exception.BusinessException;
 import com.interviewmind.common.exception.ErrorCode;
-import com.interviewmind.modules.interview.model.CategoryQuota;
-import com.interviewmind.modules.interview.model.GeneratedQuestion;
-import com.interviewmind.modules.interview.model.InterviewQuestionEntity;
-import com.interviewmind.modules.interview.model.InterviewSessionEntity;
-import com.interviewmind.modules.interview.model.InterviewSessionStatus;
-import com.interviewmind.modules.interview.model.QuestionResponse;
+import com.interviewmind.modules.interview.model.backendModel.CategoryQuota;
+import com.interviewmind.modules.interview.model.AIresult.GeneratedQuestion;
+import com.interviewmind.modules.interview.model.entity.InterviewQuestionEntity;
+import com.interviewmind.modules.interview.model.entity.InterviewSessionEntity;
+import com.interviewmind.modules.interview.model.status.InterviewSessionStatus;
+import com.interviewmind.modules.interview.model.response.QuestionResponse;
 import com.interviewmind.modules.interview.repository.InterviewQuestionRepository;
 import com.interviewmind.modules.interview.repository.InterviewSessionRepository;
 import com.interviewmind.modules.interview.utils.TransformService;

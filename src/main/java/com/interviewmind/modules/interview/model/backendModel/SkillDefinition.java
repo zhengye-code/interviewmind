@@ -1,4 +1,4 @@
-package com.interviewmind.modules.interview.model;
+package com.interviewmind.modules.interview.model.backendModel;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;

@@ -2,7 +2,15 @@ package com.interviewmind.modules.interview.service;
 
 import com.interviewmind.common.exception.BusinessException;
 import com.interviewmind.common.exception.ErrorCode;
-import com.interviewmind.modules.interview.model.*;
+import com.interviewmind.modules.interview.model.AIresult.InterviewEvaluationResult;
+import com.interviewmind.modules.interview.model.AIsend.EvaluationItem;
+import com.interviewmind.modules.interview.model.backendModel.QuestionScore;
+import com.interviewmind.modules.interview.model.entity.InterviewQuestionEntity;
+import com.interviewmind.modules.interview.model.entity.InterviewQuestionScoreEntity;
+import com.interviewmind.modules.interview.model.entity.InterviewReportEntity;
+import com.interviewmind.modules.interview.model.entity.InterviewSessionEntity;
+import com.interviewmind.modules.interview.model.response.InterviewEvaluationResponse;
+import com.interviewmind.modules.interview.model.status.InterviewSessionStatus;
 import com.interviewmind.modules.interview.repository.InterviewQuestionRepository;
 import com.interviewmind.modules.interview.repository.InterviewQuestionScoreRepository;
 import com.interviewmind.modules.interview.repository.InterviewReportRepository;

@@ -293,7 +293,7 @@ package com.interviewmind.modules.interview.utils;
 
 import com.interviewmind.common.exception.BusinessException;
 import com.interviewmind.common.exception.ErrorCode;
-import com.interviewmind.modules.interview.model.CategoryQuota;
+import com.interviewmind.modules.interview.model.backendModel.CategoryQuota;
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
@@ -334,7 +334,8 @@ public final class TransformService {
             return List.of();
         }
         try {
-            return OBJECT_MAPPER.readValue(json, new TypeReference<List<CategoryQuota>>() {});
+            return OBJECT_MAPPER.readValue(json, new TypeReference<List<CategoryQuota>>() {
+            });
         } catch (JacksonException e) {
             log.warn("解析配额 JSON 失败,json={}", json);
             return List.of();
@@ -347,7 +348,8 @@ public final class TransformService {
             return List.of();
         }
         try {
-            return OBJECT_MAPPER.readValue(json, new TypeReference<List<String>>() {});
+            return OBJECT_MAPPER.readValue(json, new TypeReference<List<String>>() {
+            });
         } catch (JacksonException e) {
             log.warn("解析字符串数组失败,json={}", json);
             return List.of();
@@ -401,7 +403,7 @@ List<CategoryQuota> plan = TransformService.fromJson(sessionEntity.getPlanJson()
 ```java
 package com.interviewmind.modules.interview.utils;
 
-import com.interviewmind.modules.interview.model.CategoryQuota;
+import com.interviewmind.modules.interview.model.backendModel.CategoryQuota;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -479,7 +481,7 @@ System.out.println(plan.get(0).getClass().getName());
 正确时输出：
 
 ```
-com.interviewmind.modules.interview.model.CategoryQuota
+com.interviewmind.modules.interview.model.backendModel.CategoryQuota
 ```
 
 ---

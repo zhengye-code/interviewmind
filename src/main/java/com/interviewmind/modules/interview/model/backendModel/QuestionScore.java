@@ -1,4 +1,4 @@
-package com.interviewmind.modules.interview.model;
+package com.interviewmind.modules.interview.model.backendModel;
 
 import java.util.List;
 

@@ -1,4 +1,4 @@
-package com.interviewmind.modules.interview.model;
+package com.interviewmind.modules.interview.model.request;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;

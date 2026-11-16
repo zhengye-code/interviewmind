@@ -1,4 +1,4 @@
-package com.interviewmind.modules.interview.model;
+package com.interviewmind.modules.interview.model.status;
 
 import com.interviewmind.common.exception.BusinessException;
 import com.interviewmind.common.exception.ErrorCode;

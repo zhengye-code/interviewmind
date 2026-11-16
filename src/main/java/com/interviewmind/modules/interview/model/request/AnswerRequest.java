@@ -1,4 +1,4 @@
-package com.interviewmind.modules.interview.model;
+package com.interviewmind.modules.interview.model.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

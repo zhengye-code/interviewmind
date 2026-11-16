@@ -463,6 +463,8 @@ public record GeneratedQuestion(
 ```java
 package com.interviewmind.modules.interview.model;
 
+import com.interviewmind.modules.interview.model.AIresult.GeneratedQuestion;
+
 import java.util.List;
 
 /**
@@ -497,10 +499,10 @@ package com.interviewmind.modules.interview.service;
 
 import com.interviewmind.common.exception.BusinessException;
 import com.interviewmind.common.exception.ErrorCode;
-import com.interviewmind.modules.interview.model.CategoryQuota;
-import com.interviewmind.modules.interview.model.GeneratedQuestion;
-import com.interviewmind.modules.interview.model.GeneratedQuestionBatch;
-import com.interviewmind.modules.interview.model.InterviewDifficulty;
+import com.interviewmind.modules.interview.model.backendModel.CategoryQuota;
+import com.interviewmind.modules.interview.model.AIresult.GeneratedQuestion;
+import com.interviewmind.modules.interview.model.AIresult.GeneratedQuestionBatch;
+import com.interviewmind.modules.interview.model.status.InterviewDifficulty;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.PromptTemplate;
@@ -584,7 +586,7 @@ public class QuestionGenerationService {
     }
 
     /** 把"困难"翻译成一句给 AI 看的具体说明 */
-    private String difficultyHint(InterviewDifficulty difficulty) {
+    private String difficultyHint(com.interviewmind.modules.interview.model.status.InterviewDifficulty difficulty) {
         return switch (difficulty) {
             case EASY -> "偏基础，考察概念准确性与常见用法";
             case MEDIUM -> "中等，兼顾原理机制与真实工程场景";
@@ -647,9 +649,10 @@ public QuestionGenerationService(ChatClient chatClient, ResourceLoader resourceL
 package com.interviewmind.modules.interview.controller;
 
 import com.interviewmind.common.result.Result;
+import com.interviewmind.modules.interview.model.AIresult.GeneratedQuestion;
 import com.interviewmind.modules.interview.model.GeneratedQuestion;
-import com.interviewmind.modules.interview.model.InterviewDifficulty;
-import com.interviewmind.modules.interview.model.SessionResponse;
+import com.interviewmind.modules.interview.model.status.InterviewDifficulty;
+import com.interviewmind.modules.interview.model.response.SessionResponse;
 import com.interviewmind.modules.interview.service.InterviewSessionService;
 import com.interviewmind.modules.interview.service.QuestionGenerationService;
 import com.interviewmind.modules.interview.service.InterviewSkillService;
@@ -783,7 +786,7 @@ AI 交回来的题目可能在哪 4 个方面出问题：
 ```java
 package com.interviewmind.modules.interview.service;
 
-import com.interviewmind.modules.interview.model.CategoryQuota;
+import com.interviewmind.modules.interview.model.AIresult.GeneratedQuestion;
 import com.interviewmind.modules.interview.model.GeneratedQuestion;
 import org.springframework.stereotype.Component;
 
@@ -816,14 +819,14 @@ public class QuestionBatchSanitizer {
 
     public List<GeneratedQuestion> merge(List<GeneratedQuestion> selected,
                                          List<GeneratedQuestion> raw,
-                                         List<CategoryQuota> plan) {
+                                         List<com.interviewmind.modules.interview.model.backendModel.CategoryQuota> plan) {
 
         // 从"已经选好的"开始，返回一个新列表（不改动传进来的那个）
         List<GeneratedQuestion> result = new ArrayList<>(selected == null ? List.of() : selected);
 
         // 把配额单转成 Map，方便按分类查"最多几道"
         Map<String, Integer> quotas = new HashMap<>();
-        for (CategoryQuota quota : plan) {
+        for (com.interviewmind.modules.interview.model.backendModel.CategoryQuota quota : plan) {
             quotas.put(quota.categoryKey(), quota.quota());
         }
         if (quotas.isEmpty()) {
@@ -945,8 +948,8 @@ public class QuestionBatchSanitizer {
 ```java
 package com.interviewmind.modules.interview.service;
 
-import com.interviewmind.modules.interview.model.CategoryQuota;
-import com.interviewmind.modules.interview.model.GeneratedQuestion;
+import com.interviewmind.modules.interview.model.backendModel.CategoryQuota;
+import com.interviewmind.modules.interview.model.AIresult.GeneratedQuestion;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -1150,7 +1153,7 @@ CONSTRAINT uk_interview_questions_order UNIQUE (session_id, question_index)
 ```java
 package com.interviewmind.modules.interview.service;
 
-import com.interviewmind.modules.interview.model.InterviewQuestionEntity;
+import com.interviewmind.modules.interview.model.entity.InterviewQuestionEntity;
 import com.interviewmind.modules.interview.repository.InterviewQuestionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -1346,17 +1349,17 @@ package com.interviewmind.modules.interview.service;
 
 import com.interviewmind.common.exception.BusinessException;
 import com.interviewmind.common.exception.ErrorCode;
-import com.interviewmind.modules.interview.model.CategoryQuota;
-import com.interviewmind.modules.interview.model.GeneratedQuestion;
-import com.interviewmind.modules.interview.model.InterviewDifficulty;
-import com.interviewmind.modules.interview.model.InterviewQuestionEntity;
-import com.interviewmind.modules.interview.model.InterviewSessionEntity;
-import com.interviewmind.modules.interview.model.InterviewSessionStatus;
+import com.interviewmind.modules.interview.model.AIresult.GeneratedQuestion;
+import com.interviewmind.modules.interview.model.backendModel.CategoryQuota;
+import com.interviewmind.modules.interview.model.response.QuestionResponse;
+import com.interviewmind.modules.interview.model.status.InterviewDifficulty;
+import com.interviewmind.modules.interview.model.entity.InterviewQuestionEntity;
+import com.interviewmind.modules.interview.model.entity.InterviewSessionEntity;
+import com.interviewmind.modules.interview.model.status.InterviewSessionStatus;
 import com.interviewmind.modules.interview.model.MissingQuota;
-import com.interviewmind.modules.interview.model.QuestionResponse;
 import com.interviewmind.modules.interview.repository.InterviewQuestionRepository;
 import com.interviewmind.modules.interview.repository.InterviewSessionRepository;
-import com.interviewmind.modules.interview.model.SkillDefinition;
+import com.interviewmind.modules.interview.model.backendModel.SkillDefinition;
 import com.interviewmind.modules.resume.model.ResumeEntity;
 import com.interviewmind.modules.resume.repository.ResumeRepository;
 import lombok.RequiredArgsConstructor;
@@ -1404,7 +1407,7 @@ public class InterviewQuestionService {
                     "会话状态为 " + session.getStatus() + "，无法出题");
         }
 
-        List<CategoryQuota> plan = parsePlan(session.getPlanJson());
+        List<com.interviewmind.modules.interview.model.backendModel.CategoryQuota> plan = parsePlan(session.getPlanJson());
         if (plan.isEmpty()) {
             throw new BusinessException(ErrorCode.INTERVIEW_QUESTION_GENERATION_FAILED,
                     "会话缺少出题配额，无法生成题目");
@@ -1479,7 +1482,7 @@ public class InterviewQuestionService {
     }
 
     /** 数一数：每个分类还差几道 */
-    private List<MissingQuota> findMissing(List<CategoryQuota> plan, List<GeneratedQuestion> selected) {
+    private List<MissingQuota> findMissing(List<com.interviewmind.modules.interview.model.backendModel.CategoryQuota> plan, List<GeneratedQuestion> selected) {
         Map<String, Integer> have = new HashMap<>();
         for (GeneratedQuestion question : selected) {
             have.merge(question.categoryKey(), 1, Integer::sum);
@@ -1546,7 +1549,7 @@ public class InterviewQuestionService {
 
     /** 把数据库实体转换成返回给前端的 DTO（故意不含 expectedPoints） */
     private List<QuestionResponse> toResponses(List<InterviewQuestionEntity> entities,
-                                               List<CategoryQuota> plan) {
+                                               List<com.interviewmind.modules.interview.model.backendModel.CategoryQuota> plan) {
         Map<String, String> labels = new HashMap<>();
         for (CategoryQuota quota : plan) {
             labels.put(quota.categoryKey(), quota.label());
@@ -1562,7 +1565,7 @@ public class InterviewQuestionService {
                 .toList();
     }
 
-    private List<CategoryQuota> parsePlan(String json) {
+    private List<com.interviewmind.modules.interview.model.backendModel.CategoryQuota> parsePlan(String json) {
         if (json == null || json.isBlank()) {
             return List.of();
         }
@@ -1629,7 +1632,7 @@ public class InterviewQuestionService {
 package com.interviewmind.modules.interview.controller;
 
 import com.interviewmind.common.result.Result;
-import com.interviewmind.modules.interview.model.QuestionResponse;
+import com.interviewmind.modules.interview.model.response.QuestionResponse;
 import com.interviewmind.modules.interview.service.InterviewQuestionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;

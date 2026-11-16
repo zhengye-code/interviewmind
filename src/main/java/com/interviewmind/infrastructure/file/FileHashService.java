@@ -5,6 +5,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
@@ -27,6 +28,15 @@ public class FileHashService {
             throw new RuntimeException(e);
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
+        }
+    }
+    /** 给字符串算 SHA-256（知识库文档去重用） */
+    public String sha256Hex(String text) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance(ALGORITHM);
+            return HexFormat.of().formatHex(digest.digest(text.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 不可用", e);
         }
     }
 }

@@ -2,7 +2,7 @@ package com.interviewmind.modules.interview.service;
 
 import com.interviewmind.common.exception.BusinessException;
 import com.interviewmind.common.exception.ErrorCode;
-import com.interviewmind.modules.interview.model.SkillDefinition;
+import com.interviewmind.modules.interview.model.backendModel.SkillDefinition;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;

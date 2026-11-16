@@ -2,7 +2,7 @@ package com.interviewmind.modules.interview.controller;
 
 import com.interviewmind.common.result.Result;
 import com.interviewmind.modules.interview.service.InterviewSkillService;
-import com.interviewmind.modules.interview.model.SkillDefinition;
+import com.interviewmind.modules.interview.model.backendModel.SkillDefinition;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

@@ -2,7 +2,14 @@ package com.interviewmind.modules.interview.service;
 
 import com.interviewmind.common.exception.BusinessException;
 import com.interviewmind.common.exception.ErrorCode;
-import com.interviewmind.modules.interview.model.*;
+import com.interviewmind.modules.interview.model.backendModel.CategoryQuota;
+import com.interviewmind.modules.interview.model.entity.InterviewQuestionEntity;
+import com.interviewmind.modules.interview.model.entity.InterviewSessionEntity;
+import com.interviewmind.modules.interview.model.request.AnswerRequest;
+import com.interviewmind.modules.interview.model.response.CurrentQuestionResponse;
+import com.interviewmind.modules.interview.model.response.QuestionResponse;
+import com.interviewmind.modules.interview.model.response.SummaryQuestionResponse;
+import com.interviewmind.modules.interview.model.status.InterviewSessionStatus;
 import com.interviewmind.modules.interview.repository.InterviewQuestionRepository;
 import com.interviewmind.modules.interview.repository.InterviewSessionRepository;
 import com.interviewmind.modules.interview.utils.TransformService;
@@ -69,6 +76,9 @@ public class InterviewAnswerService {
 
         // 已经是最后一题 → 结束这场面试
         if (currentIndex >= questions.size() - 1) {
+            // 指针走完全程（0 → N），让 currentIndex == totalQuestions 成为"已结束"的统一标志，
+            // 前端进度条才能显示 N/N；否则会停在 (N-1)/N
+            session.setCurrentQuestionIndex(questions.size());
             session.setStatus(InterviewSessionStatus.COMPLETED);
             session.setFinishedAt(LocalDateTime.now());
             sessionRepo.save(session);

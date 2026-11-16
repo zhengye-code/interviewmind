@@ -1,10 +1,9 @@
 package com.interviewmind.modules.interview.controller;
 
 import com.interviewmind.common.result.Result;
-import com.interviewmind.modules.interview.model.CreateSessionRequest;
-import com.interviewmind.modules.interview.model.InterviewEvaluationResponse;
-import com.interviewmind.modules.interview.model.SessionResponse;
-import com.interviewmind.modules.interview.repository.InterviewSessionRepository;
+import com.interviewmind.modules.interview.model.request.CreateSessionRequest;
+import com.interviewmind.modules.interview.model.response.InterviewEvaluationResponse;
+import com.interviewmind.modules.interview.model.response.SessionResponse;
 import com.interviewmind.modules.interview.service.InterviewEvaluateService;
 import com.interviewmind.modules.interview.service.InterviewSessionService;
 import jakarta.validation.Valid;

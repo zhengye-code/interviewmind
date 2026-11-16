@@ -26,6 +26,11 @@
 	</properties>
 
 	<dependencies>
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-markdown-document-reader</artifactId>
+		</dependency>
+
 		<!-- Apache Tika — 文档解析（PDF / DOCX / DOC / TXT） -->
 		<dependency>
 			<groupId>org.apache.tika</groupId>
@@ -82,6 +87,11 @@
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-starter-model-openai</artifactId>
+		</dependency>
+		<!-- pgvector 向量库：让 Postgres 支持按语义检索 -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-starter-vector-store-pgvector</artifactId>
 		</dependency>
 		<!-- M0 移除了脚手架遗留的 spring-ai-starter-vector-store-azure 与 spring-ai-vector-store-advisor：
 		     前者是 start.spring.io 生成的 Azure AI Search，与本项目的 PostgreSQL + pgvector 栈不符；

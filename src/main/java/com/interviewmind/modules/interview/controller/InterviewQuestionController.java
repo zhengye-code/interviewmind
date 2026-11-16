@@ -1,7 +1,7 @@
 package com.interviewmind.modules.interview.controller;
 
 import com.interviewmind.common.result.Result;
-import com.interviewmind.modules.interview.model.QuestionResponse;
+import com.interviewmind.modules.interview.model.response.QuestionResponse;
 import com.interviewmind.modules.interview.service.InterviewQuestionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;

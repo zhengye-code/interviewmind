@@ -1,4 +1,6 @@
-package com.interviewmind.modules.interview.model;
+package com.interviewmind.modules.interview.model.AIresult;
+
+import com.interviewmind.modules.interview.model.backendModel.QuestionScore;
 
 import java.util.List;
 

@@ -2,7 +2,7 @@ package com.interviewmind.modules.interview.utils;
 
 import com.interviewmind.common.exception.BusinessException;
 import com.interviewmind.common.exception.ErrorCode;
-import com.interviewmind.modules.interview.model.CategoryQuota;
+import com.interviewmind.modules.interview.model.backendModel.CategoryQuota;
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JavaType;

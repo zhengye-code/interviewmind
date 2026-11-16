@@ -2,8 +2,8 @@ package com.interviewmind.modules.interview.service;
 
 import com.interviewmind.common.exception.BusinessException;
 import com.interviewmind.common.exception.ErrorCode;
-import com.interviewmind.modules.interview.model.CategoryQuota;
-import com.interviewmind.modules.interview.model.SkillDefinition;
+import com.interviewmind.modules.interview.model.backendModel.CategoryQuota;
+import com.interviewmind.modules.interview.model.backendModel.SkillDefinition;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

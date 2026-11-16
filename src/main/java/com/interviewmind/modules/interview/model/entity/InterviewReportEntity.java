@@ -1,4 +1,4 @@
-package com.interviewmind.modules.interview.model;
+package com.interviewmind.modules.interview.model.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;

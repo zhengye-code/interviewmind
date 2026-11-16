@@ -2,9 +2,14 @@ package com.interviewmind.modules.interview.service;
 
 import com.interviewmind.common.exception.BusinessException;
 import com.interviewmind.common.exception.ErrorCode;
-import com.interviewmind.modules.interview.model.*;
+import com.interviewmind.modules.interview.model.backendModel.CategoryQuota;
+import com.interviewmind.modules.interview.model.entity.InterviewSessionEntity;
+import com.interviewmind.modules.interview.model.request.CreateSessionRequest;
+import com.interviewmind.modules.interview.model.response.SessionResponse;
+import com.interviewmind.modules.interview.model.status.InterviewDifficulty;
+import com.interviewmind.modules.interview.model.status.InterviewSessionStatus;
 import com.interviewmind.modules.interview.repository.InterviewSessionRepository;
-import com.interviewmind.modules.interview.model.SkillDefinition;
+import com.interviewmind.modules.interview.model.backendModel.SkillDefinition;
 import com.interviewmind.modules.resume.repository.ResumeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

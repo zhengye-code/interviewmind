@@ -1,6 +1,4 @@
-package com.interviewmind.modules.interview.model;
-
-import java.time.LocalDateTime;
+package com.interviewmind.modules.interview.model.response;
 
 public record SummaryQuestionResponse(
         Long sessionId,

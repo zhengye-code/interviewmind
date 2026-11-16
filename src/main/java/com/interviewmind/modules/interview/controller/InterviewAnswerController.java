@@ -1,9 +1,9 @@
 package com.interviewmind.modules.interview.controller;
 
 import com.interviewmind.common.result.Result;
-import com.interviewmind.modules.interview.model.AnswerRequest;
-import com.interviewmind.modules.interview.model.CurrentQuestionResponse;
-import com.interviewmind.modules.interview.model.SummaryQuestionResponse;
+import com.interviewmind.modules.interview.model.request.AnswerRequest;
+import com.interviewmind.modules.interview.model.response.CurrentQuestionResponse;
+import com.interviewmind.modules.interview.model.response.SummaryQuestionResponse;
 import com.interviewmind.modules.interview.service.InterviewAnswerService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

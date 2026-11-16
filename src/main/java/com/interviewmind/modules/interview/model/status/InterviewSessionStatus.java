@@ -1,4 +1,4 @@
-package com.interviewmind.modules.interview.model;
+package com.interviewmind.modules.interview.model.status;
 
 public enum InterviewSessionStatus {
     /** 进行中：还有题没答 */

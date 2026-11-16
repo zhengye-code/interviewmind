@@ -295,8 +295,9 @@ package com.interviewmind.modules.interview.service;
 
 import com.interviewmind.common.exception.BusinessException;
 import com.interviewmind.common.exception.ErrorCode;
+import com.interviewmind.modules.interview.model.AIresult.InterviewEvaluationResult;
+import com.interviewmind.modules.interview.model.AIsend.EvaluationItem;
 import com.interviewmind.modules.interview.model.EvaluationItem;
-import com.interviewmind.modules.interview.model.InterviewEvaluationResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.PromptTemplate;
@@ -318,84 +319,84 @@ import java.util.Map;
 @Service
 public class InterviewGradingService {
 
-    /** 每道题的回答最多喂给模型这么多字，控制 token 成本 */
-    private static final int MAX_ANSWER_CHARS = 1500;
+   /** 每道题的回答最多喂给模型这么多字，控制 token 成本 */
+   private static final int MAX_ANSWER_CHARS = 1500;
 
-    private final ChatClient chatClient;
-    private final String systemPrompt;
-    private final PromptTemplate userPromptTemplate;
+   private final ChatClient chatClient;
+   private final String systemPrompt;
+   private final PromptTemplate userPromptTemplate;
 
-    public InterviewGradingService(ChatClient chatClient, ResourceLoader resourceLoader) throws IOException {
-        this.chatClient = chatClient;
-        this.systemPrompt = load(resourceLoader, "classpath:prompts/interview-evaluation-system.st");
-        this.userPromptTemplate = new PromptTemplate(
-                load(resourceLoader, "classpath:prompts/interview-evaluation-user.st"));
-    }
+   public InterviewGradingService(ChatClient chatClient, ResourceLoader resourceLoader) throws IOException {
+      this.chatClient = chatClient;
+      this.systemPrompt = load(resourceLoader, "classpath:prompts/interview-evaluation-system.st");
+      this.userPromptTemplate = new PromptTemplate(
+              load(resourceLoader, "classpath:prompts/interview-evaluation-user.st"));
+   }
 
-    private static String load(ResourceLoader resourceLoader, String location) throws IOException {
-        return resourceLoader.getResource(location).getContentAsString(StandardCharsets.UTF_8);
-    }
+   private static String load(ResourceLoader resourceLoader, String location) throws IOException {
+      return resourceLoader.getResource(location).getContentAsString(StandardCharsets.UTF_8);
+   }
 
-    /** 一次调用，给全部题目打分 */
-    public InterviewEvaluationResult evaluate(List<EvaluationItem> items) {
-        Map<String, Object> variables = new HashMap<>();
-        variables.put("totalQuestions", items.size());
-        variables.put("questionBlocks", buildBlocks(items));
+   /** 一次调用，给全部题目打分 */
+   public InterviewEvaluationResult evaluate(List<EvaluationItem> items) {
+      Map<String, Object> variables = new HashMap<>();
+      variables.put("totalQuestions", items.size());
+      variables.put("questionBlocks", buildBlocks(items));
 
-        String userText = userPromptTemplate.render(variables);
+      String userText = userPromptTemplate.render(variables);
 
-        try {
-            InterviewEvaluationResult result = chatClient.prompt()
-                    .system(systemPrompt)
-                    .user(userText)
-                    .call()
-                    .entity(InterviewEvaluationResult.class);
+      try {
+         InterviewEvaluationResult result = chatClient.prompt()
+                 .system(systemPrompt)
+                 .user(userText)
+                 .call()
+                 .entity(InterviewEvaluationResult.class);
 
-            if (result == null || result.questionScores() == null || result.questionScores().isEmpty()) {
-                throw new BusinessException(ErrorCode.INTERVIEW_EVALUATION_FAILED, "AI 没有返回任何评分");
-            }
-            log.info("AI 评分完成: 提交 {} 题, 返回 {} 题", items.size(), result.questionScores().size());
-            return result;
+         if (result == null || result.questionScores() == null || result.questionScores().isEmpty()) {
+            throw new BusinessException(ErrorCode.INTERVIEW_EVALUATION_FAILED, "AI 没有返回任何评分");
+         }
+         log.info("AI 评分完成: 提交 {} 题, 返回 {} 题", items.size(), result.questionScores().size());
+         return result;
 
-        } catch (BusinessException e) {
-            throw e;
-        } catch (Exception e) {
-            log.error("AI 评分失败", e);
-            throw new BusinessException(ErrorCode.INTERVIEW_EVALUATION_FAILED,
-                    "AI 评分失败：" + e.getMessage(), e);
-        }
-    }
+      } catch (BusinessException e) {
+         throw e;
+      } catch (Exception e) {
+         log.error("AI 评分失败", e);
+         throw new BusinessException(ErrorCode.INTERVIEW_EVALUATION_FAILED,
+                 "AI 评分失败：" + e.getMessage(), e);
+      }
+   }
 
-    /** 把 10 道题拼成一段给模型看的文字 */
-    private String buildBlocks(List<EvaluationItem> items) {
-        StringBuilder sb = new StringBuilder();
-        for (EvaluationItem item : items) {
-            sb.append("--- 第 ").append(item.questionIndex() + 1).append(" 题 ---\n");
-            sb.append("分类：").append(item.categoryKey()).append('\n');
-            sb.append("题目：").append(item.questionText()).append('\n');
-            sb.append("参考要点：\n");
-            if (item.expectedPoints() == null || item.expectedPoints().isEmpty()) {
-                sb.append("- （无参考要点，按你的专业判断评分）\n");
-            } else {
-                item.expectedPoints().forEach(point -> sb.append("- ").append(point).append('\n'));
-            }
-            sb.append("候选人的回答：\n")
-              .append(truncate(item.answerText(), MAX_ANSWER_CHARS))
-              .append("\n\n");
-        }
-        return sb.toString();
-    }
+   /** 把 10 道题拼成一段给模型看的文字 */
+   private String buildBlocks(List<EvaluationItem> items) {
+      StringBuilder sb = new StringBuilder();
+      for (EvaluationItem item : items) {
+         sb.append("--- 第 ").append(item.questionIndex() + 1).append(" 题 ---\n");
+         sb.append("分类：").append(item.categoryKey()).append('\n');
+         sb.append("题目：").append(item.questionText()).append('\n');
+         sb.append("参考要点：\n");
+         if (item.expectedPoints() == null || item.expectedPoints().isEmpty()) {
+            sb.append("- （无参考要点，按你的专业判断评分）\n");
+         } else {
+            item.expectedPoints().forEach(point -> sb.append("- ").append(point).append('\n'));
+         }
+         sb.append("候选人的回答：\n")
+                 .append(truncate(item.answerText(), MAX_ANSWER_CHARS))
+                 .append("\n\n");
+      }
+      return sb.toString();
+   }
 
-    private String truncate(String text, int maxChars) {
-        if (text == null) {
-            return "（未作答）";
-        }
-        String trimmed = text.trim();
-        if (trimmed.length() <= maxChars) {
-            return trimmed;
-        }
-        return trimmed.substring(0, maxChars) + "……（回答过长，已截断）";
-    }
+   private String truncate(String text, int maxChars) {
+      if (text == null) {
+         return "（未作答）";
+      }
+      String trimmed = text.trim();
+      if (trimmed.length() <= maxChars) {
+         return trimmed;
+      }
+      return trimmed.substring(0, maxChars) + "……（回答过长，已截断）";
+   }
 }
 ```
 
@@ -429,8 +430,7 @@ catch (Exception e) { ... 包成 BusinessException ... }   // 框架抛的，转
 ```java
 package com.interviewmind.modules.interview.service;
 
-import com.interviewmind.modules.interview.model.InterviewQuestionScoreEntity;
-import com.interviewmind.modules.interview.model.InterviewReportEntity;
+import com.interviewmind.modules.interview.model.entity.InterviewQuestionScoreEntity;
 import com.interviewmind.modules.interview.repository.InterviewQuestionScoreRepository;
 import com.interviewmind.modules.interview.repository.InterviewReportRepository;
 import lombok.RequiredArgsConstructor;
@@ -450,14 +450,14 @@ import java.util.List;
 @RequiredArgsConstructor
 public class InterviewEvaluationPersister {
 
-    private final InterviewQuestionScoreRepository scoreRepo;
-    private final InterviewReportRepository reportRepo;
+   private final InterviewQuestionScoreRepository scoreRepo;
+   private final InterviewReportRepository reportRepo;
 
-    @Transactional
-    public InterviewReportEntity save(List<InterviewQuestionScoreEntity> scores, InterviewReportEntity report) {
-        scoreRepo.saveAll(scores);
-        return reportRepo.save(report);
-    }
+   @Transactional
+   public com.interviewmind.modules.interview.model.entity.InterviewReportEntity save(List<InterviewQuestionScoreEntity> scores, com.interviewmind.modules.interview.model.entity.InterviewReportEntity report) {
+      scoreRepo.saveAll(scores);
+      return reportRepo.save(report);
+   }
 }
 ```
 
@@ -479,14 +479,14 @@ package com.interviewmind.modules.interview.service;
 
 import com.interviewmind.common.exception.BusinessException;
 import com.interviewmind.common.exception.ErrorCode;
-import com.interviewmind.modules.interview.model.EvaluationItem;
+import com.interviewmind.modules.interview.model.AIresult.InterviewEvaluationResult;
+import com.interviewmind.modules.interview.model.AIsend.EvaluationItem;
 import com.interviewmind.modules.interview.model.EvaluationResponse;
-import com.interviewmind.modules.interview.model.InterviewEvaluationResult;
-import com.interviewmind.modules.interview.model.InterviewQuestionEntity;
-import com.interviewmind.modules.interview.model.InterviewQuestionScoreEntity;
-import com.interviewmind.modules.interview.model.InterviewReportEntity;
-import com.interviewmind.modules.interview.model.InterviewSessionEntity;
-import com.interviewmind.modules.interview.model.InterviewSessionStatus;
+import com.interviewmind.modules.interview.model.entity.InterviewQuestionEntity;
+import com.interviewmind.modules.interview.model.entity.InterviewQuestionScoreEntity;
+import com.interviewmind.modules.interview.model.entity.InterviewReportEntity;
+import com.interviewmind.modules.interview.model.entity.InterviewSessionEntity;
+import com.interviewmind.modules.interview.model.status.InterviewSessionStatus;
 import com.interviewmind.modules.interview.repository.InterviewQuestionRepository;
 import com.interviewmind.modules.interview.repository.InterviewQuestionScoreRepository;
 import com.interviewmind.modules.interview.repository.InterviewReportRepository;
@@ -511,212 +511,213 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class InterviewEvaluationService {
 
-    private final InterviewSessionRepository sessionRepo;
-    private final InterviewQuestionRepository questionRepo;
-    private final InterviewQuestionScoreRepository scoreRepo;
-    private final InterviewReportRepository reportRepo;
-    private final InterviewGradingService gradingService;
-    private final InterviewEvaluationPersister persister;
-    private final ObjectMapper objectMapper;
+   private final InterviewSessionRepository sessionRepo;
+   private final InterviewQuestionRepository questionRepo;
+   private final InterviewQuestionScoreRepository scoreRepo;
+   private final InterviewReportRepository reportRepo;
+   private final InterviewGradingService gradingService;
+   private final InterviewEvaluationPersister persister;
+   private final ObjectMapper objectMapper;
 
-    /** 记录用哪个模型评的，便于以后换模型时区分历史数据 */
-    @Value("${spring.ai.deepseek.chat.options.model:deepseek-chat}")
-    private String modelName;
+   /** 记录用哪个模型评的，便于以后换模型时区分历史数据 */
+   @Value("${spring.ai.deepseek.chat.options.model:deepseek-chat}")
+   private String modelName;
 
-    /**
-     * 评分（幂等）。
-     *
-     * 这个方法故意不加 @Transactional：
-     *   里面有一次 20-40 秒的 AI 调用，包在事务里会一直占着数据库连接。
-     *   真正需要事务的只有最后那次写入，交给 InterviewEvaluationPersister。
-     */
-    public EvaluationResponse evaluate(Long sessionId) {
-        InterviewSessionEntity session = loadSession(sessionId);
+   /**
+    * 评分（幂等）。
+    *
+    * 这个方法故意不加 @Transactional：
+    *   里面有一次 20-40 秒的 AI 调用，包在事务里会一直占着数据库连接。
+    *   真正需要事务的只有最后那次写入，交给 InterviewEvaluationPersister。
+    */
+   public EvaluationResponse evaluate(Long sessionId) {
+      InterviewSessionEntity session = loadSession(sessionId);
 
-        // ① 幂等：已经有报告就直接返回
-        EvaluationResponse existing = loadExisting(sessionId);
-        if (existing != null) {
-            log.info("已存在评分结果，直接返回: sessionId={}", sessionId);
-            return existing;
-        }
+      // ① 幂等：已经有报告就直接返回
+      EvaluationResponse existing = loadExisting(sessionId);
+      if (existing != null) {
+         log.info("已存在评分结果，直接返回: sessionId={}", sessionId);
+         return existing;
+      }
 
-        // ② 必须答完才能评
-        if (session.getStatus() != InterviewSessionStatus.COMPLETED) {
-            throw new BusinessException(ErrorCode.INTERVIEW_SESSION_STATE_INVALID,
-                    "面试尚未结束，无法评分（当前进度 "
-                            + session.getCurrentQuestionIndex() + "/" + session.getTotalQuestions() + "）");
-        }
+      // ② 必须答完才能评
+      if (session.getStatus() != InterviewSessionStatus.COMPLETED) {
+         throw new BusinessException(ErrorCode.INTERVIEW_SESSION_STATE_INVALID,
+                 "面试尚未结束，无法评分（当前进度 "
+                         + session.getCurrentQuestionIndex() + "/" + session.getTotalQuestions() + "）");
+      }
 
-        // ③ 读出题目
-        List<InterviewQuestionEntity> questions =
-                questionRepo.findBySessionIdOrderByQuestionIndexAsc(sessionId);
-        if (questions.isEmpty()) {
-            throw new BusinessException(ErrorCode.INTERVIEW_EVALUATION_FAILED, "本场面试没有题目");
-        }
+      // ③ 读出题目
+      List<InterviewQuestionEntity> questions =
+              questionRepo.findBySessionIdOrderByQuestionIndexAsc(sessionId);
+      if (questions.isEmpty()) {
+         throw new BusinessException(ErrorCode.INTERVIEW_EVALUATION_FAILED, "本场面试没有题目");
+      }
 
-        long unanswered = questions.stream().filter(q -> q.getAnsweredAt() == null).count();
-        if (unanswered > 0) {
-            throw new BusinessException(ErrorCode.INTERVIEW_SESSION_STATE_INVALID,
-                    "还有 " + unanswered + " 道题未作答，无法评分");
-        }
+      long unanswered = questions.stream().filter(q -> q.getAnsweredAt() == null).count();
+      if (unanswered > 0) {
+         throw new BusinessException(ErrorCode.INTERVIEW_SESSION_STATE_INVALID,
+                 "还有 " + unanswered + " 道题未作答，无法评分");
+      }
 
-        // ④ 组装评分材料
-        List<EvaluationItem> items = questions.stream()
-                .map(q -> new EvaluationItem(
-                        q.getQuestionIndex(),
-                        q.getCategoryKey(),
-                        q.getQuestionText(),
-                        parsePoints(q.getExpectedPoints()),
-                        q.getAnswerText()))
-                .toList();
+      // ④ 组装评分材料
+      List<EvaluationItem> items = questions.stream()
+              .map(q -> new EvaluationItem(
+                      q.getQuestionIndex(),
+                      q.getCategoryKey(),
+                      q.getQuestionText(),
+                      parsePoints(q.getExpectedPoints()),
+                      q.getAnswerText()))
+              .toList();
 
-        // ⑤ 一次调用，全部打分
-        log.info("开始评分: sessionId={}, 题数={}", sessionId, items.size());
-        InterviewEvaluationResult aiResult = gradingService.evaluate(items);
+      // ⑤ 一次调用，全部打分
+      log.info("开始评分: sessionId={}, 题数={}", sessionId, items.size());
+      InterviewEvaluationResult aiResult = gradingService.evaluate(items);
 
-        // ⑥ 对齐：按 questionIndex 找到每题对应的评分
-        Map<Integer, InterviewEvaluationResult.QuestionScore> scoreByIndex = new HashMap<>();
-        for (InterviewEvaluationResult.QuestionScore score : aiResult.questionScores()) {
-            if (score != null) {
-                scoreByIndex.put(score.questionIndex(), score);
-            }
-        }
+      // ⑥ 对齐：按 questionIndex 找到每题对应的评分
+      Map<Integer, InterviewEvaluationResult.QuestionScore> scoreByIndex = new HashMap<>();
+      for (InterviewEvaluationResult.QuestionScore score : aiResult.questionScores()) {
+         if (score != null) {
+            scoreByIndex.put(score.questionIndex(), score);
+         }
+      }
 
-        Map<Integer, Long> questionIdByIndex = new HashMap<>();
-        for (InterviewQuestionEntity question : questions) {
-            questionIdByIndex.put(question.getQuestionIndex(), question.getId());
-        }
+      Map<Integer, Long> questionIdByIndex = new HashMap<>();
+      for (InterviewQuestionEntity question : questions) {
+         questionIdByIndex.put(question.getQuestionIndex(), question.getId());
+      }
 
-        // ⑦ 逐题校验
-        List<InterviewQuestionScoreEntity> scoreEntities = new ArrayList<>();
-        for (InterviewQuestionEntity question : questions) {
-            Integer index = question.getQuestionIndex();
-            InterviewEvaluationResult.QuestionScore score = scoreByIndex.get(index);
-            if (score == null) {
-                log.warn("AI 漏评第 {} 题，跳过: sessionId={}", index, sessionId);
-                continue;
-            }
-            int clamped = clamp(score.score(), 0, 10);
-            if (clamped != score.score()) {
-                log.warn("AI 给出越界分数 {}，已修正为 {}: sessionId={}, 题号={}",
-                        score.score(), clamped, sessionId, index);
-            }
+      // ⑦ 逐题校验
+      List<InterviewQuestionScoreEntity> scoreEntities = new ArrayList<>();
+      for (InterviewQuestionEntity question : questions) {
+         Integer index = question.getQuestionIndex();
+         InterviewEvaluationResult.QuestionScore score = scoreByIndex.get(index);
+         if (score == null) {
+            log.warn("AI 漏评第 {} 题，跳过: sessionId={}", index, sessionId);
+            continue;
+         }
+         int clamped = clamp(score.score(), 0, 10);
+         if (clamped != score.score()) {
+            log.warn("AI 给出越界分数 {}，已修正为 {}: sessionId={}, 题号={}",
+                    score.score(), clamped, sessionId, index);
+         }
 
-            InterviewQuestionScoreEntity entity = new InterviewQuestionScoreEntity();
-            entity.setSessionId(sessionId);
-            entity.setQuestionId(questionIdByIndex.get(index));
-            entity.setScore(clamped);
-            entity.setHitPointsJson(toJson(score.hitPoints()));
-            entity.setMissedPointsJson(toJson(score.missedPoints()));
-            entity.setComment(score.comment());
-            scoreEntities.add(entity);
-        }
+         InterviewQuestionScoreEntity entity = new InterviewQuestionScoreEntity();
+         entity.setSessionId(sessionId);
+         entity.setQuestionId(questionIdByIndex.get(index));
+         entity.setScore(clamped);
+         entity.setHitPointsJson(toJson(score.hitPoints()));
+         entity.setMissedPointsJson(toJson(score.missedPoints()));
+         entity.setComment(score.comment());
+         scoreEntities.add(entity);
+      }
 
-        if (scoreEntities.isEmpty()) {
+      if (scoreEntities.isEmpty()) {
+         throw new BusinessException(ErrorCode.INTERVIEW_EVALUATION_FAILED,
+                 "AI 没有给出任何有效评分，请重试");
+      }
+
+      // ⑧ 总分由代码算，不是 AI 给的
+      int overallScore = (int) Math.round(
+              scoreEntities.stream().mapToInt(InterviewQuestionScoreEntity::getScore).average().orElse(0) * 10);
+
+      // ⑨ 报告
+      InterviewReportEntity report = new InterviewReportEntity();
+      report.setSessionId(sessionId);
+      report.setOverallScore(overallScore);
+      report.setSummary(aiResult.summary());
+      report.setStrengthsJson(toJson(aiResult.strengths()));
+      report.setSuggestionsJson(toJson(aiResult.suggestions()));
+      report.setModel(modelName);
+
+      try {
+         InterviewReportEntity saved = persister.save(scoreEntities, report);
+         log.info("评分完成: sessionId={}, 总分={}, 评了 {} 题", sessionId, overallScore, scoreEntities.size());
+         return toResponse(saved, scoreEntities);
+      } catch (DataIntegrityViolationException e) {
+         // 并发评分：另一个请求抢先写进去了
+         log.warn("并发评分冲突，返回已有结果: sessionId={}", sessionId);
+         EvaluationResponse raced = loadExisting(sessionId);
+         if (raced == null) {
             throw new BusinessException(ErrorCode.INTERVIEW_EVALUATION_FAILED,
-                    "AI 没有给出任何有效评分，请重试");
-        }
+                    "评分写入冲突，请稍后重试", e);
+         }
+         return raced;
+      }
+   }
 
-        // ⑧ 总分由代码算，不是 AI 给的
-        int overallScore = (int) Math.round(
-                scoreEntities.stream().mapToInt(InterviewQuestionScoreEntity::getScore).average().orElse(0) * 10);
+   // ==================== 私有方法 ====================
 
-        // ⑨ 报告
-        InterviewReportEntity report = new InterviewReportEntity();
-        report.setSessionId(sessionId);
-        report.setOverallScore(overallScore);
-        report.setSummary(aiResult.summary());
-        report.setStrengthsJson(toJson(aiResult.strengths()));
-        report.setSuggestionsJson(toJson(aiResult.suggestions()));
-        report.setModel(modelName);
+   private InterviewSessionEntity loadSession(Long sessionId) {
+      return sessionRepo.findById(sessionId)
+              .orElseThrow(() -> new BusinessException(
+                      ErrorCode.INTERVIEW_SESSION_NOT_FOUND, "面试会话不存在,id=" + sessionId));
+   }
 
-        try {
-            InterviewReportEntity saved = persister.save(scoreEntities, report);
-            log.info("评分完成: sessionId={}, 总分={}, 评了 {} 题", sessionId, overallScore, scoreEntities.size());
-            return toResponse(saved, scoreEntities);
-        } catch (DataIntegrityViolationException e) {
-            // 并发评分：另一个请求抢先写进去了
-            log.warn("并发评分冲突，返回已有结果: sessionId={}", sessionId);
-            EvaluationResponse raced = loadExisting(sessionId);
-            if (raced == null) {
-                throw new BusinessException(ErrorCode.INTERVIEW_EVALUATION_FAILED,
-                        "评分写入冲突，请稍后重试", e);
-            }
-            return raced;
-        }
-    }
+   /** 已评过就返回已有结果，没评过返回 null */
+   private EvaluationResponse loadExisting(Long sessionId) {
+      InterviewReportEntity report = reportRepo.findBySessionId(sessionId).orElse(null);
+      if (report == null) {
+         return null;
+      }
+      return toResponse(report, scoreRepo.findBySessionId(sessionId));
+   }
 
-    // ==================== 私有方法 ====================
+   private EvaluationResponse toResponse(InterviewReportEntity report,
+                                         List<InterviewQuestionScoreEntity> scores) {
+      Map<Long, Integer> indexById = new HashMap<>();
+      for (InterviewQuestionEntity question :
+              questionRepo.findBySessionIdOrderByQuestionIndexAsc(report.getSessionId())) {
+         indexById.put(question.getId(), question.getQuestionIndex());
+      }
 
-    private InterviewSessionEntity loadSession(Long sessionId) {
-        return sessionRepo.findById(sessionId)
-                .orElseThrow(() -> new BusinessException(
-                        ErrorCode.INTERVIEW_SESSION_NOT_FOUND, "面试会话不存在,id=" + sessionId));
-    }
+      List<EvaluationResponse.QuestionScoreDetail> details = scores.stream()
+              .map(entity -> new EvaluationResponse.QuestionScoreDetail(
+                      indexById.getOrDefault(entity.getQuestionId(), -1),
+                      entity.getScore() == null ? 0 : entity.getScore(),
+                      parsePoints(entity.getHitPointsJson()),
+                      parsePoints(entity.getMissedPointsJson()),
+                      entity.getComment()))
+              .sorted(Comparator.comparingInt(EvaluationResponse.QuestionScoreDetail::questionIndex))
+              .toList();
 
-    /** 已评过就返回已有结果，没评过返回 null */
-    private EvaluationResponse loadExisting(Long sessionId) {
-        InterviewReportEntity report = reportRepo.findBySessionId(sessionId).orElse(null);
-        if (report == null) {
-            return null;
-        }
-        return toResponse(report, scoreRepo.findBySessionId(sessionId));
-    }
+      return new EvaluationResponse(
+              report.getSessionId(),
+              report.getOverallScore() == null ? 0 : report.getOverallScore(),
+              details.size(),
+              report.getSummary(),
+              parsePoints(report.getStrengthsJson()),
+              parsePoints(report.getSuggestionsJson()),
+              report.getModel(),
+              report.getEvaluatedAt(),
+              details);
+   }
 
-    private EvaluationResponse toResponse(InterviewReportEntity report,
-                                          List<InterviewQuestionScoreEntity> scores) {
-        Map<Long, Integer> indexById = new HashMap<>();
-        for (InterviewQuestionEntity question :
-                questionRepo.findBySessionIdOrderByQuestionIndexAsc(report.getSessionId())) {
-            indexById.put(question.getId(), question.getQuestionIndex());
-        }
+   /** 把一个 JSON 数组字符串读成 List&lt;String&gt;，解析失败就返回空列表 */
+   private List<String> parsePoints(String json) {
+      if (json == null || json.isBlank()) {
+         return List.of();
+      }
+      try {
+         return objectMapper.readValue(json, new TypeReference<List<String>>() {
+         });
+      } catch (JacksonException e) {
+         log.warn("解析 JSON 数组失败: {}", json);
+         return List.of();
+      }
+   }
 
-        List<EvaluationResponse.QuestionScoreDetail> details = scores.stream()
-                .map(entity -> new EvaluationResponse.QuestionScoreDetail(
-                        indexById.getOrDefault(entity.getQuestionId(), -1),
-                        entity.getScore() == null ? 0 : entity.getScore(),
-                        parsePoints(entity.getHitPointsJson()),
-                        parsePoints(entity.getMissedPointsJson()),
-                        entity.getComment()))
-                .sorted(Comparator.comparingInt(EvaluationResponse.QuestionScoreDetail::questionIndex))
-                .toList();
+   private String toJson(List<String> values) {
+      try {
+         return objectMapper.writeValueAsString(values == null ? List.of() : values);
+      } catch (JacksonException e) {
+         throw new BusinessException(ErrorCode.INTERVIEW_EVALUATION_FAILED, "序列化失败", e);
+      }
+   }
 
-        return new EvaluationResponse(
-                report.getSessionId(),
-                report.getOverallScore() == null ? 0 : report.getOverallScore(),
-                details.size(),
-                report.getSummary(),
-                parsePoints(report.getStrengthsJson()),
-                parsePoints(report.getSuggestionsJson()),
-                report.getModel(),
-                report.getEvaluatedAt(),
-                details);
-    }
-
-    /** 把一个 JSON 数组字符串读成 List&lt;String&gt;，解析失败就返回空列表 */
-    private List<String> parsePoints(String json) {
-        if (json == null || json.isBlank()) {
-            return List.of();
-        }
-        try {
-            return objectMapper.readValue(json, new TypeReference<List<String>>() {});
-        } catch (JacksonException e) {
-            log.warn("解析 JSON 数组失败: {}", json);
-            return List.of();
-        }
-    }
-
-    private String toJson(List<String> values) {
-        try {
-            return objectMapper.writeValueAsString(values == null ? List.of() : values);
-        } catch (JacksonException e) {
-            throw new BusinessException(ErrorCode.INTERVIEW_EVALUATION_FAILED, "序列化失败", e);
-        }
-    }
-
-    private static int clamp(int value, int min, int max) {
-        return Math.max(min, Math.min(max, value));
-    }
+   private static int clamp(int value, int min, int max) {
+      return Math.max(min, Math.min(max, value));
+   }
 }
 ```
 

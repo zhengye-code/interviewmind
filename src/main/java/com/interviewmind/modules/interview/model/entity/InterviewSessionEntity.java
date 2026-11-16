@@ -1,5 +1,7 @@
-package com.interviewmind.modules.interview.model;
+package com.interviewmind.modules.interview.model.entity;
 
+import com.interviewmind.modules.interview.model.status.InterviewSessionStatus;
+import com.interviewmind.modules.interview.model.status.InterviewDifficulty;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

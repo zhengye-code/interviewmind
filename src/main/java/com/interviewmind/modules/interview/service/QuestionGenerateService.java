@@ -3,12 +3,11 @@ package com.interviewmind.modules.interview.service;
 import com.interviewmind.common.exception.BusinessException;
 import com.interviewmind.common.exception.ErrorCode;
 import com.interviewmind.modules.ai.AiChatService;
-import com.interviewmind.modules.interview.model.*;
-import com.interviewmind.modules.resume.model.ResumeAnalysisResponse;
-import com.interviewmind.modules.resume.model.ResumeEntity;
+import com.interviewmind.modules.interview.model.AIresult.GeneratedQuestion;
+import com.interviewmind.modules.interview.model.AIresult.GeneratedQuestionBatch;
+import com.interviewmind.modules.interview.model.backendModel.CategoryQuota;
+import com.interviewmind.modules.interview.model.status.InterviewDifficulty;
 import com.interviewmind.modules.resume.repository.ResumeRepository;
-import com.interviewmind.modules.resume.service.ResumeAnalyzeService;
-import com.interviewmind.modules.resume.service.ResumeUploadService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -37,11 +36,11 @@ public class QuestionGenerateService {
         }
     }
     public List<GeneratedQuestion> generate(String systemPrompt,
-                                           String skillName,
-                                           InterviewDifficulty difficulty,
-                                           int totalQuestions,
-                                           List<CategoryQuota> plan,
-                                           String resumeSection){
+                                            String skillName,
+                                            InterviewDifficulty difficulty,
+                                            int totalQuestions,
+                                            List<CategoryQuota> plan,
+                                            String resumeSection){
 
         Map<String,Object> map=new HashMap<>();
         map.put("skillName",skillName);
